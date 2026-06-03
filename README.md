@@ -24,9 +24,17 @@ Transport: [Streamable HTTP](https://modelcontextprotocol.io/specification/2025-
 claude mcp add --transport http lovable https://mcp.lovable.dev
 ```
 
+### ChatGPT
+
+Like Claude and Claude Code, ChatGPT does not need a client ID — just the URL:
+
+```
+https://mcp.lovable.dev
+```
+
 ### Cursor / Windsurf / other MCP clients
 
-Any client other than Claude or ChatGPT must pass Lovable's public OAuth client ID:
+Any client other than Claude, Claude Code, or ChatGPT must pass Lovable's public OAuth client ID:
 
 ```json
 {
