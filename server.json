@@ -3,7 +3,7 @@
   "name": "dev.lovable/mcp",
   "title": "Lovable",
   "description": "Official MCP server for Lovable, the AI-powered full-stack app builder.",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "repository": {
     "url": "https://github.com/lovablelabs/mcp",
     "source": "github"
