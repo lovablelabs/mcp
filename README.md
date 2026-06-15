@@ -140,6 +140,10 @@ Most tools need a `workspace_id` — call `list_workspaces` first. `read_file` n
 
 This repository hosts the [`server.json`](./server.json) entry for the [MCP registry](https://registry.modelcontextprotocol.io/).
 
+## Privacy
+
+This plugin connects to Lovable's remote MCP server (`mcp.lovable.dev`, OAuth 2.1) to build, iterate on, deploy, and inspect your Lovable apps. Project, workspace, and database content you act on is transmitted to Lovable's service to fulfil those requests. See Lovable's [Privacy Policy](https://lovable.dev/privacy) for how that data is collected and handled.
+
 ## License
 
 [Apache License 2.0](./LICENSE)
