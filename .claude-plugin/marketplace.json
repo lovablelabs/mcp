@@ -1,0 +1,15 @@
+{
+  "name": "lovable",
+  "description": "Official Lovable plugin for Claude Code — build, iterate on, deploy, and manage Lovable apps.",
+  "owner": {
+    "name": "Lovable",
+    "url": "https://lovable.dev"
+  },
+  "plugins": [
+    {
+      "name": "lovable",
+      "source": "./",
+      "description": "Build, iterate on, deploy, and manage Lovable apps from Claude Code — wraps the official Lovable MCP server with focused commands."
+    }
+  ]
+}
