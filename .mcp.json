@@ -2,7 +2,7 @@
   "mcpServers": {
     "lovable": {
       "type": "http",
-      "url": "https://mcp.lovable.dev"
+      "url": "https://mcp.lovable.dev/?src=cc-plugin"
     }
   }
 }
