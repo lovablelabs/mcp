@@ -45,14 +45,14 @@ Reads only. No skill writes to any of these.
 | What | What happened | What the skills do about it |
 |---|---|---|
 | Blocking build call | Timed out at the client after several minutes; the project existed anyway | `wait: false`, poll `get_project`, recover by owner and time |
-| Project names | Lovable picks its own ("HireFlow Tracker" for "Hiring tracker (plugin test)") | Use the returned id, never the requested name |
+| Project names | Lovable picks its own, whatever the message asked for | Use the returned id, never the requested name |
 | Visibility | New projects are `restricted` | `set_project_visibility` for team apps |
-| Publishing | `deploy_project` returns `pending`; Enterprise workspaces published to `workspace` by default | Poll `is_published`, report `publish_audience` |
+| Publishing | `deploy_project` returns `pending`; Enterprise workspaces may publish to the workspace by default | Poll `is_published`, report `publish_audience` |
 | Workspace knowledge | 403 for members, works for admins | Fall back to project knowledge |
-| Sign-in | Enterprise workspace allowed Lovable SSO only | Ask for "sign-in as the workspace allows" |
+| Sign-in | Some workspaces allow Lovable SSO only | Ask for "sign-in as the workspace allows" |
 | Writes | NULL into a NOT NULL column failed and rolled back the whole statement; rows carry `changed_by = unknown` | Read nullability and enums first; disclose attribution |
 | Uploads | PUT without the returned headers was refused (400) | Send `Content-Type` plus every returned header |
-| Big payloads | `get_message` ran past 100,000 characters; three weeks of calendar 258,000 | Read once, read fields, page small |
+| Big payloads | `get_message` can run past 100,000 characters; a few weeks of calendar past 250,000 | Read once, read fields, page small |
 
 ## For workspace admins
 

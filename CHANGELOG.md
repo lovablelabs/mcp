@@ -2,7 +2,7 @@
 
 ## 0.3.0
 
-Hardened after live runs against the Lovable MCP on two workspaces (one as admin, one as member). Two apps were built end to end in the Enterprise Sandbox: a hiring tracker (9.2 credits, then a planned change for 1 + 1 credits, published) and a spreadsheet import (6.3 credits, 8 of 8 rows).
+Hardened after live runs of every skill against the Lovable MCP, on a workspace where the person was admin and one where they were a member. Three apps were built end to end: a hiring tracker, a spreadsheet import, and a Claude Design import made functional.
 
 What changed in every skill:
 - `create_project` and `send_message` are called with `wait: false`; progress is polled with `get_project.agentFinished`; `get_message` is read once for status, summary, credits and commit. A blocking call timed out client side while the project was created anyway.
@@ -12,6 +12,7 @@ What changed in every skill:
 - Stack detection from `.lovable/project.json`; file maps for TanStack Start and the older React stack; `.env` treated as possibly unreadable.
 - Database writes read nullability, defaults and enum labels first; service-role attribution is disclosed.
 - File uploads send the returned headers (a PUT without them is refused).
+- Never repeat a secret value; report file and line only.
 - Plan mode is documented as ending in `awaiting_input`, with the plan in `.lovable/plan/` and the apply message superseding the approval.
 - Claude Design import requires a `claudeusercontent.com` URL, which only Claude Design's Share, Send to, Lovable action produces; the skill now gives that click path instead of asking for a link.
 - Calendar and mail reads are paged and distilled.
