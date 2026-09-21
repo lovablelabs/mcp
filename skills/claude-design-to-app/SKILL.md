@@ -1,6 +1,6 @@
 ---
 name: claude-design-to-app
-description: Turn a Claude Design into a working Lovable app that keeps the design and adds the data, sign-in and actions behind it. Use when a Claude Design arrives in the conversation through Share, Send to, Lovable (the message carries a claudeusercontent.com URL), or when the person says "build this design", "turn this design into an app", "Claude Design to Lovable", or "import this design".
+description: Turn a Claude Design that was sent to Lovable into a working app that keeps the design and adds the data, sign-in and actions behind it. Use when the person says "I just sent a design to Lovable", pastes an Open in Lovable link or project id from Claude Design, or says "build this design", "turn this design into an app", "Claude Design to Lovable", or "make the imported design work".
 ---
 
 # Claude design to app
@@ -26,26 +26,28 @@ description: Turn a Claude Design into a working Lovable app that keeps the desi
 - No schedules or automation promises. If the person wants this to run on a cadence, that is a Claude feature they set up themselves.
 - The labels in the "Spend map" block are guidance for Claude. Never show them to the person.
 
-The design is the front. The import brings it into Lovable as is. One message then adds what makes it an app, without restyling. The check compares the result to the design before anything is published.
+The design is the front. Claude Design does the import itself: Share, More formats and apps, Send next to Lovable, a workspace question inside Claude Design, then an Open in Lovable link. This skill starts at that link. One message then adds what makes it an app, without restyling. The check compares the result to the design before anything is published.
 
 ## Tools used
 
 | Tool | Used for | Required? |
 |---|---|---|
-| `get_me` | workspace | yes |
-| `import-claude-design-from-url` | bring the design into Lovable as a project | yes |
-| `get_project`, `get_message` | follow the import and see the result | yes |
+| `get_me`, `list_projects` | find the project Claude Design just created (newest, owned by the person) | yes |
+| `import-claude-design-from-url` | only if a claudeusercontent.com URL is literally in the conversation; Claude Design normally calls this itself | no |
+| `get_project`, `list_files`, `read_file` | see how the design was translated | yes |
 | `send_message` | add data, sign-in and actions (credits) | yes |
 | `get_diff`, `list_files`, `read_file` | confirm the design was kept | yes |
 | `deploy_project` | publish | after a yes |
 
-## Step 1 - The link and the brief
+## Step 1 - Where the design is
 
-The only URL the tool accepts is one hosted on `claudeusercontent.com`, and only Claude Design produces it. The person opens the design at claude.ai/design, clicks Share, then More formats and apps, and under Your destinations clicks Send next to Lovable (Connect more destinations adds it if it is missing). Claude Design hands the conversation a message with the hosted export URL, valid for about an hour. A pasted claude.ai link, a design page URL or a standalone HTML download is not that: the tool refuses any other host with "Claude Design URL must be hosted on claudeusercontent.com". If the person arrives with anything else, give them the click path above and wait. Sending the same design again creates a second project today; say so before a re-send. Then write the brief in the conversation, free: what a person does in this app beyond looking at it, what it stores, who signs in, what is out of v1.
+Ask whether the design has been sent to Lovable yet. Not yet: give the click path (claude.ai/design, Share, More formats and apps, Send next to Lovable, pick the workspace in the form Claude Design shows, wait for Open in Lovable) and stop. The import runs inside Claude Design and its hosted URL never reaches this conversation. Sending the same design twice creates a second project; say so. Already sent: take the Open in Lovable link or project id, or `get_me` then `list_projects` newest first and pick the project owned by the person and created in the last minutes. Confirm the name with them. Only if a `claudeusercontent.com` URL is literally present in this conversation, call `import-claude-design-from-url` with it, a `title` and `workspace_id`; any other host is refused.
 
-## Step 2 - Import
+Then write the brief in the conversation, free: what a person does in this app beyond looking at it, what it stores, who signs in, what is out of v1.
 
-`get_me`, workspace. `import-claude-design-from-url` with `url`, a `title`, and `workspace_id`. The import itself is not one of the two credit-spending tools; the follow-up message is, and the skill says so before it runs. Follow with `get_project` for the screenshot and `preview_url`. Compare to the design: layout, type, colors, components. List what differs.
+## Step 2 - Look at what arrived
+
+`get_project` for the screenshot and `preview_url`; `list_files` and `read_file` on the main route to see how the design was translated. Compare to the design: layout, type, colors, components. List what differs. The import spent no credits; the next step does, and the skill says so before it runs.
 
 ## Step 3 - Make it work (credits, yes first)
 
@@ -67,7 +69,7 @@ The live URL and `editor_url`, the differences from the design that remain, and 
 
 ```
 tiers:
-  free-reads:     the brief, the import, the comparison
+  free-reads:     finding the imported project, the brief, the comparison
   spends-credits: one send_message to make it work and at most one fix round, each with its own yes
   ships-live:     deploy_project after a yes
 ```
