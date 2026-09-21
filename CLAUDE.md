@@ -19,7 +19,7 @@ Thirteen skills, one shared rules block. Each names the Lovable MCP tools it cal
 | Apps already on Lovable | `ask-my-app-data`, `review-my-workspace`, `fix-and-ship`, `use-my-project-knowledge` |
 | New to Lovable | `build-from-this-conversation`, `find-what-to-build`, `spreadsheet-to-app`, `claude-design-to-app` |
 
-Editing a skill: keep the Rules block identical across all 13 (it is the contract), keep the "Tools used" table to tools the server actually exposes, keep the file under 120 lines, and never show the `tiers` labels to the person. See `CONNECTORS.md` for the credit and safety table.
+Editing a skill: edit `scripts/generate-skills.py` and run it, so the Rules block stays identical across all 13 (it is the contract); do not hand-edit one SKILL.md. Keep keep the "Tools used" table to tools the server actually exposes, the file under 120 lines, and never show the Spend map labels to the person. See `CONNECTORS.md` for the credit and safety table.
 
 ## Commands
 
