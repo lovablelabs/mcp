@@ -2,13 +2,26 @@
 
 > Build, iterate on, deploy, and manage [Lovable](https://lovable.dev) apps without leaving Claude Code.
 
-The official Claude Code plugin for [Lovable](https://lovable.dev), the AI-powered full-stack app builder. It bundles the official [Lovable MCP server](https://mcp.lovable.dev) — pre-wired, with automatic OAuth — plus focused commands for the workflows developers reach for most.
+The official Claude Code plugin for [Lovable](https://lovable.dev), the AI-powered full-stack app builder. It bundles the official [Lovable MCP server](https://mcp.lovable.dev), pre-wired with automatic OAuth, plus 13 skills and three commands for the workflows people reach for most. Skills live in `skills/<name>/SKILL.md`; commands in `commands/`.
 
 ## Why use it
 
 Lovable builds and hosts full-stack apps; Claude Code is your local agent. This plugin connects the two so you can drive Lovable from your terminal: describe an app and ship it, request a change and review the diff, or provision and query a database — all in natural language, with credit- and publish-safety prompts built in.
 
-## What's included
+## Skills
+
+Thirteen skills, one shared rules block. Each names the Lovable MCP tools it calls in order, asks before `create_project` and `send_message` (the only credit-spending tools), stops before `deploy_project` and any database write, and reads `get_workspace_knowledge` first for the business profile that `know-my-business` writes.
+
+| Bucket | Skills |
+|---|---|
+| Foundation | `know-my-business` |
+| Get the work done | `launch`, `first-customers`, `customer-research`, `hiring-tracker` |
+| Apps already on Lovable | `ask-my-app-data`, `review-my-workspace`, `fix-and-ship`, `use-my-project-knowledge` |
+| New to Lovable | `build-from-this-conversation`, `find-what-to-build`, `spreadsheet-to-app`, `claude-design-to-app` |
+
+Editing a skill: keep the Rules block identical across all 13 (it is the contract), keep the "Tools used" table to tools the server actually exposes, keep the file under 120 lines, and never show the `tiers` labels to the person. See `CONNECTORS.md` for the credit and safety table.
+
+## Commands
 
 | Command | What it does | Lovable tools used |
 |---|---|---|
