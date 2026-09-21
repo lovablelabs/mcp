@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.3.0
+
+Hardened after live runs against the Lovable MCP on two workspaces (one as admin, one as member). Two apps were built end to end in the Enterprise Sandbox: a hiring tracker (9.2 credits, then a planned change for 1 + 1 credits, published) and a spreadsheet import (6.3 credits, 8 of 8 rows).
+
+What changed in every skill:
+- `create_project` and `send_message` are called with `wait: false`; progress is polled with `get_project.agentFinished`; `get_message` is read once for status, summary, credits and commit. A blocking call timed out client side while the project was created anyway.
+- Recovery after a timeout: find the newest project by `owner_id`, never create twice. Lovable renames projects, so the requested name is never used to find one.
+- New projects are `restricted`; team apps call `set_project_visibility`. `deploy_project` is asynchronous; `publish_audience` is read back and reported.
+- Workspace knowledge returns 403 for members; skills fall back to project knowledge.
+- Stack detection from `.lovable/project.json`; file maps for TanStack Start and the older React stack; `.env` treated as possibly unreadable.
+- Database writes read nullability, defaults and enum labels first; service-role attribution is disclosed.
+- File uploads send the returned headers (a PUT without them is refused).
+- Plan mode is documented as ending in `awaiting_input`, with the plan in `.lovable/plan/` and the apply message superseding the approval.
+- Claude Design import requires a `claudeusercontent.com` URL.
+- Calendar and mail reads are paged and distilled.
+
+
 ## 0.2.0
 
 Skills. The plugin now carries 13 skills alongside the MCP server and the three commands.

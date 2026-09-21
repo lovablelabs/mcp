@@ -25,7 +25,7 @@ Restart Claude Code after installing. Verify with `/mcp` (look for `lovable`) or
 
 ## Skills
 
-Skills run when your request matches, or directly by name (for example `/lovable:launch`). Every skill reads the workspace's business profile first, asks before spending credits, and stops before publishing.
+Skills run when your request matches, or directly by name (for example `/lovable:launch`). Every skill reads the workspace's business profile first, asks before spending credits, reports what each call cost, and stops before publishing. The skills were run end to end against the live Lovable MCP before this release; what that changed is in [CHANGELOG.md](CHANGELOG.md) and [CONNECTORS.md](CONNECTORS.md).
 
 ### Start here
 

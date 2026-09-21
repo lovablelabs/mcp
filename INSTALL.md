@@ -41,6 +41,10 @@ Say it the way you would say it, not the skill name. Each line below should fire
 
 The first four spend nothing. The rest ask before `create_project` or `send_message` and ask again before publishing. If a skill spends credits without asking, or publishes without asking, that is a bug: note which skill and what you said.
 
+## Known harness limits
+
+In Claude Code auto mode, two calls were refused by the permission classifier, not by Lovable: writing workspace knowledge (`set_workspace_knowledge`) and reading a project's `.env`. The skills say so when it happens and hand you the text to paste or skip the file. In claude.ai and Cowork these calls prompt you instead.
+
 ## Where to report
 
 Post in #wg-claude-sept-launch with the skill name, what you said, and what happened. Screenshots welcome.

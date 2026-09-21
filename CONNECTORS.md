@@ -40,6 +40,20 @@ These are the person's own Claude connectors. They are not bundled here, and eve
 
 Reads only. No skill writes to any of these.
 
+## Behaviour seen in live runs
+
+| What | What happened | What the skills do about it |
+|---|---|---|
+| Blocking build call | Timed out at the client after several minutes; the project existed anyway | `wait: false`, poll `get_project`, recover by owner and time |
+| Project names | Lovable picks its own ("HireFlow Tracker" for "Hiring tracker (plugin test)") | Use the returned id, never the requested name |
+| Visibility | New projects are `restricted` | `set_project_visibility` for team apps |
+| Publishing | `deploy_project` returns `pending`; Enterprise workspaces published to `workspace` by default | Poll `is_published`, report `publish_audience` |
+| Workspace knowledge | 403 for members, works for admins | Fall back to project knowledge |
+| Sign-in | Enterprise workspace allowed Lovable SSO only | Ask for "sign-in as the workspace allows" |
+| Writes | NULL into a NOT NULL column failed and rolled back the whole statement; rows carry `changed_by = unknown` | Read nullability and enums first; disclose attribution |
+| Uploads | PUT without the returned headers was refused (400) | Send `Content-Type` plus every returned header |
+| Big payloads | `get_message` ran past 100,000 characters; three weeks of calendar 258,000 | Read once, read fields, page small |
+
 ## For workspace admins
 
 - On Enterprise workspaces, third-party MCP clients must be enabled under Settings, Security, Privacy and security before anyone can sign in from Claude.
