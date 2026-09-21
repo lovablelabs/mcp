@@ -507,7 +507,7 @@ The live URL and `editor_url`, the table of tabs to tables with row counts on bo
 
 # ---------------------------------------------------------------- 12 claude-design-to-app
 skill("claude-design-to-app",
-'Turn a Claude Design into a working Lovable app that keeps the design and adds the data, sign-in and actions behind it. Use when the person shares a Claude Design link and says "build this design", "turn this design into an app", "Claude Design to Lovable", or "import this design".',
+'Turn a Claude Design into a working Lovable app that keeps the design and adds the data, sign-in and actions behind it. Use when a Claude Design arrives in the conversation through Share, Send to, Lovable (the message carries a claudeusercontent.com URL), or when the person says "build this design", "turn this design into an app", "Claude Design to Lovable", or "import this design".',
 """The design is the front. The import brings it into Lovable as is. One message then adds what makes it an app, without restyling. The check compares the result to the design before anything is published.""",
 [("`get_me`", "workspace", "yes"),
  ("`import-claude-design-from-url`", "bring the design into Lovable as a project", "yes"),
@@ -517,7 +517,7 @@ skill("claude-design-to-app",
  ("`deploy_project`", "publish", "after a yes")],
 """## Step 1 - The link and the brief
 
-The tool accepts only a URL hosted on `claudeusercontent.com`, the public export of a Claude Design, valid for about an hour. Any other host is refused with "Claude Design URL must be hosted on claudeusercontent.com". A link to a Claude conversation or a design page is not that; ask for the export or share link from Claude Design and check the host before calling. Then write the brief in the conversation, free: what a person does in this app beyond looking at it, what it stores, who signs in, what is out of v1.
+The only URL the tool accepts is one hosted on `claudeusercontent.com`, and only Claude Design produces it. The person opens the design at claude.ai/design, clicks Share, then Send to, then Lovable (Add destination shows the full partner list if Lovable is not pinned). Claude Design hands the conversation a message with the hosted export URL, valid for about an hour. A pasted claude.ai link, a design page URL or a standalone HTML download is not that: the tool refuses any other host with "Claude Design URL must be hosted on claudeusercontent.com". If the person arrives with anything else, give them the click path above and wait. Sending the same design again creates a second project today; say so before a re-send. Then write the brief in the conversation, free: what a person does in this app beyond looking at it, what it stores, who signs in, what is out of v1.
 
 ## Step 2 - Import
 

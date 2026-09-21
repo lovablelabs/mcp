@@ -38,6 +38,7 @@ Say it the way you would say it, not the skill name. Each line below should fire
 - "Make this real." after describing an idea [build-from-this-conversation]
 - "We're launching Tuesday. I need a launch page and a changelog." [launch]
 - "Our storage bill tripled. Find out why and fix it." [fix-and-ship]
+- In claude.ai/design: Share, Send to, Lovable, then answer the workspace question in the chat [claude-design-to-app]
 
 The first four spend nothing. The rest ask before `create_project` or `send_message` and ask again before publishing. If a skill spends credits without asking, or publishes without asking, that is a bug: note which skill and what you said.
 

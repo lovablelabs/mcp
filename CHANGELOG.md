@@ -13,7 +13,7 @@ What changed in every skill:
 - Database writes read nullability, defaults and enum labels first; service-role attribution is disclosed.
 - File uploads send the returned headers (a PUT without them is refused).
 - Plan mode is documented as ending in `awaiting_input`, with the plan in `.lovable/plan/` and the apply message superseding the approval.
-- Claude Design import requires a `claudeusercontent.com` URL.
+- Claude Design import requires a `claudeusercontent.com` URL, which only Claude Design's Share, Send to, Lovable action produces; the skill now gives that click path instead of asking for a link.
 - Calendar and mail reads are paged and distilled.
 
 
