@@ -527,7 +527,7 @@ The import is itself a build: Claude Design creates the project and sends Lovabl
 
 ## Step 3 - Make it work (credits, yes first)
 
-`send_message` (`wait: false`) with: keep the imported design exactly as it is; add the cloud database; sign-in as this workspace allows when people have accounts, or anonymous insert-only access when it is a public page with a form (no anonymous reads); wire each screen and form to the data model from the brief; make every button and link do what its label says; remove leaked design-tool text; no restyling, no new pages beyond the brief. Poll `get_project` until `agentFinished`, `get_message` once. `get_diff` with the `message_id` and confirm styling files were not rewritten.
+`send_message` (`wait: false`) with: keep the imported design exactly as it is; add the cloud database; sign-in as this workspace allows when people have accounts, or anonymous insert-only access when it is a public page with a form (no anonymous reads); wire each screen and form to the data model from the brief; make every button and link do what its label says; remove leaked design-tool text; no restyling, no new pages beyond the brief. Poll `get_project` until `agentFinished`, `get_message` once (3 credits in testing for a waitlist table, wired form, live buttons and a footer fix). `get_diff` with the `message_id`; when the database was just enabled the diff carries the whole Supabase client scaffold and runs past 60,000 characters, so summarize it per file and read only the migration and the route. Confirm `src/styles.css` was not touched and the migration grants anon nothing beyond INSERT.
 
 ## Step 4 - Check and one fix round
 
