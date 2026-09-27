@@ -15,11 +15,17 @@ Transport: [Streamable HTTP](https://modelcontextprotocol.io/specification/2025-
 
 ## Authentication
 
-**OAuth 2.1.** MCP clients discover the authorization server via RFC 9728 metadata at `https://mcp.lovable.dev/.well-known/oauth-protected-resource` and obtain a bearer token automatically. The token is passed as `Authorization: Bearer <token>`.
+**OAuth 2.1 — no keys or client IDs to copy.** On first connection your client:
+
+1. **Discovers** the authorization server from the RFC 9728 metadata at `https://mcp.lovable.dev/.well-known/oauth-protected-resource`, which points at `https://lovable.dev/oauth`.
+2. **Registers itself** with [Dynamic Client Registration](https://www.rfc-editor.org/rfc/rfc7591) (RFC 7591) at `https://lovable.dev/oauth/register` — the `registration_endpoint` advertised in `https://lovable.dev/oauth/.well-known/oauth-authorization-server`. Clients that publish a [Client ID Metadata Document](https://datatracker.ietf.org/doc/draft-ietf-oauth-client-id-metadata-document/) (Claude, Claude Code, VS Code) use its URL as their `client_id` and skip this step.
+3. **Signs you in**: a browser window opens so you can log in to Lovable and approve the requested scopes (`projects:read`, `projects:write`, `workspaces:read`, `workspaces:write`, `offline`). The client exchanges the authorization code (PKCE `S256`) for a token and sends it as `Authorization: Bearer <token>`.
+
+Registration is open, with one rule: every `redirect_uris` entry must be a loopback address (`localhost`, `127.0.0.1` or `[::1]` — http or https, any port and path) or an allowlisted HTTPS host. Anything else is rejected with `invalid_redirect_uri`. Registration is rate-limited to 5 requests per minute per IP. A custom client whose OAuth callback lives on a public domain — a hosted agent or a server-side integration — needs its callback host or its Client ID Metadata Document domain allowlisted: [contact support](https://lovable.dev/support).
 
 ## Install
 
-Claude, Claude Code, and ChatGPT need only the URL. Any other client must also pass Lovable's public OAuth client ID (`6d465f583e1e4ce5801b1616f735670c`), shown below.
+Every client below needs only the server URL and registers itself on first use. Cursor is the one exception: its OAuth callback (`https://www.cursor.com/agents/mcp/oauth/callback`) is neither loopback nor allowlisted, so it uses Lovable's pre-registered public client ID (`6d465f583e1e4ce5801b1616f735670c`) instead.
 
 ### Claude Code
 
@@ -50,9 +56,9 @@ Add the URL directly — no client ID needed:
 https://mcp.lovable.dev
 ```
 
-### Cursor / Windsurf
+### Cursor
 
-Add to your client's MCP config (`~/.cursor/mcp.json`, or Windsurf's `mcp_config.json`):
+Cursor's OAuth callback is neither loopback nor allowlisted (see [Authentication](#authentication)), so it needs Lovable's pre-registered client ID. Add to `~/.cursor/mcp.json` (or `.cursor/mcp.json` in a project):
 
 ```json
 {
@@ -68,6 +74,20 @@ Add to your client's MCP config (`~/.cursor/mcp.json`, or Windsurf's `mcp_config
 }
 ```
 
+### Windsurf
+
+Add to `~/.codeium/windsurf/mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "lovable": {
+      "serverUrl": "https://mcp.lovable.dev"
+    }
+  }
+}
+```
+
 ### VS Code
 
 ```json
@@ -75,10 +95,7 @@ Add to your client's MCP config (`~/.cursor/mcp.json`, or Windsurf's `mcp_config
   "servers": {
     "lovable": {
       "type": "http",
-      "url": "https://mcp.lovable.dev",
-      "auth": {
-        "CLIENT_ID": "6d465f583e1e4ce5801b1616f735670c"
-      }
+      "url": "https://mcp.lovable.dev"
     }
   }
 }
@@ -93,7 +110,7 @@ codex mcp login lovable
 
 ### Other clients
 
-Use the same `type: http` + `url` + `auth.CLIENT_ID` shape as the Cursor example above.
+Any MCP client that supports OAuth with a loopback callback (OpenCode, Claude Desktop, …) works with `type: http` + `url` alone, as do hosted agents whose callback host is already allowlisted (Devin, Grok, Antigravity). If your client's registration is rejected with `invalid_redirect_uri`, see [Authentication](#authentication).
 
 ## Tools
 
@@ -132,7 +149,9 @@ Most tools need a `workspace_id` — call `list_workspaces` first. `read_file` n
 | Symptom | Fix |
 |---|---|
 | `401 Unauthorized` / expired token | Re-run your client's login flow to refresh the OAuth token |
-| OAuth window loops or never completes | Confirm the client passes the `auth.CLIENT_ID` shown above |
+| `invalid_redirect_uri` during registration | The client's OAuth callback isn't loopback or allowlisted — see [Authentication](#authentication). In Cursor, set `auth.CLIENT_ID` as shown under [Cursor](#cursor); for a hosted or custom client, [contact support](https://lovable.dev/support) |
+| `429 Too Many Requests` from `/oauth/register` | Registration is limited to 5 per minute per IP — wait a minute and retry |
+| OAuth window loops or never completes | Sign in at lovable.dev first, then retry. In Cursor, confirm `auth.CLIENT_ID` is set |
 | "Transport not supported" | The client must support Streamable HTTP |
 | Tool fails on a missing `workspace_id` | Call `list_workspaces` first and pass the returned ID |
 
