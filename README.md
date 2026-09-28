@@ -21,6 +21,30 @@ Transport: [Streamable HTTP](https://modelcontextprotocol.io/specification/2025-
 
 Claude, Claude Code, and ChatGPT need only the URL. Any other client must also pass Lovable's public OAuth client ID (`6d465f583e1e4ce5801b1616f735670c`), shown below.
 
+### Loopback redirect URIs
+
+If your client is a local CLI or desktop app that receives the OAuth code on a
+loopback port, it must send the **IP literal** `127.0.0.1`, not the hostname
+`localhost`. This is what [RFC 8252 §7.3](https://www.rfc-editor.org/rfc/rfc8252#section-7.3)
+requires for native apps.
+
+Use this shape:
+
+```
+http://127.0.0.1:{port}/callback
+```
+
+The authorization server accepts **any port**, but the path must be exactly
+`/callback`. Sending `http://localhost:{port}/callback` fails the authorization
+request immediately with `invalid_request`, and the browser reports an opaque
+"Authorization failed: Invalid Request" page with no hint about the cause.
+
+If your client hardcodes `localhost` and offers no way to override the redirect
+URI, it cannot complete the flow against this server as documented here.
+[pi-mcp-adapter](https://github.com/nicobailon/pi-mcp-adapter) is one known
+example; setting `oauth.redirectUri` to `http://127.0.0.1:{port}/callback` in
+its `mcp-adapter.json` works around it.
+
 ### Claude Code
 
 ```sh
@@ -133,6 +157,7 @@ Most tools need a `workspace_id` — call `list_workspaces` first. `read_file` n
 |---|---|
 | `401 Unauthorized` / expired token | Re-run your client's login flow to refresh the OAuth token |
 | OAuth window loops or never completes | Confirm the client passes the `auth.CLIENT_ID` shown above |
+| Browser shows "Authorization failed: Invalid Request" (`invalid_request`) on the authorize step | The client sent a `localhost` or `::1` redirect URI. Loopback clients must use the `127.0.0.1` IP literal with path exactly `/callback` — see [Loopback redirect URIs](#loopback-redirect-uris) |
 | "Transport not supported" | The client must support Streamable HTTP |
 | Tool fails on a missing `workspace_id` | Call `list_workspaces` first and pass the returned ID |
 
