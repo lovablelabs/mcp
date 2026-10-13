@@ -39,7 +39,7 @@ Skills run when your request matches, or directly by name (for example `/lovable
 |---|---|---|
 | `launch` | "We're launching Tuesday" | A launch page and changelog on your site, live, plus three posts pointing at it. Copy is written and edited in Claude before anything is built. |
 | `first-customers` | "Find 200 companies like our best customer" | A CRM you own, filled from the tools connected in Claude, every row with its source. |
-| `customer-research` | "Talk to ten customers and tell me what they said" | An interview guide, a tracker for every answer, and a summary that quotes people. |
+| `interview-tracker` | "Talk to ten customers and tell me what they said" | An interview guide, a tracker for every answer, and a summary that quotes people. |
 | `hiring-tracker` | "We're hiring. Track candidates." | A pipeline with stages and a scorecard every interviewer fills the same way. Sign-in required. |
 
 ### For apps you already have on Lovable
@@ -49,7 +49,7 @@ Skills run when your request matches, or directly by name (for example `/lovable
 | `ask-my-app-data` | "How many signed up this week?" | The answer from the app's live database, with the query shown. Covers weekly numbers and the investor update. Read-only. |
 | `review-my-workspace` | "Check every project for exposed keys and missing RLS" | A ranked table of what needs attention, with the file or table as evidence, for a human to act on. Read-only. |
 | `fix-and-ship` | "Our storage bill tripled. Find out why and fix it." | Root cause with evidence, a plan, the fix applied, and live once you approve. Rollback commit included. |
-| `use-my-project-knowledge` | "Write the brief for this app" | A brief, spec, README or handover grounded in the code and schema, and the project knowledge kept current. |
+| `document-my-app` | "Write the brief for this app" | A brief, spec, README or handover grounded in the code and schema, and the project knowledge kept current. |
 
 ### New to Lovable
 

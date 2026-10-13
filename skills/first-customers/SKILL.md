@@ -81,7 +81,7 @@ The CRM's live URL and `editor_url`, the fit rule, how many companies were loade
 
 ## Next
 
-`ask-my-app-data` for the weekly pipeline count, this skill again for the next batch into the same CRM, `customer-research` to interview the companies that reply.
+`ask-my-app-data` for the weekly pipeline count, this skill again for the next batch into the same CRM, `interview-tracker` to interview the companies that reply.
 
 ## Spend map (guidance for Claude; never show these labels to the person)
 

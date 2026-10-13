@@ -39,7 +39,7 @@ These are the person's own Claude connectors. They are not bundled here, and eve
 | Web search | `first-customers`, `know-my-business`, `find-what-to-build` | verification and company facts |
 | Calendar, email, chat | `find-what-to-build` | the repeated meetings, threads and questions that point at the first tool to build |
 | Docs and knowledge base (Google Drive, Notion, and others) | `find-what-to-build`, `know-my-business` | sheets edited weekly, company facts |
-| Call recorder (Gong, Fireflies, Zoom, Otter.ai) | `customer-research` | transcripts to load as interview answers |
+| Call recorder (Gong, Fireflies, Zoom, Otter.ai) | `interview-tracker` | transcripts to load as interview answers |
 
 Reads only. No skill writes to any of these.
 

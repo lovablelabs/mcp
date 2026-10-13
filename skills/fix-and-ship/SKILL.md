@@ -85,7 +85,7 @@ Root cause with evidence, the diff summary, the live URL, the version to restore
 
 ## Next
 
-`use-my-project-knowledge` to record what changed and why, `review-my-workspace` when the fix touched access.
+`document-my-app` to record what changed and why, `review-my-workspace` when the fix touched access.
 
 ## Spend map (guidance for Claude; never show these labels to the person)
 

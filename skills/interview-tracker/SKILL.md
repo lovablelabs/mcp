@@ -1,9 +1,9 @@
 ---
-name: use-my-project-knowledge
-description: Writes a brief, spec, README or handover for a Lovable project from its actual code, schema and change log, and keeps the project knowledge that Lovable's agent reads up to date. Free. Use when the person says "write the brief for this app", "document this Lovable project", "what does this app do", "handover doc", "update the project knowledge", or "spec from the code". For docs about code in a local repository, a documentation skill fits better.
+name: interview-tracker
+description: Builds a shared customer interview tracker as a real app on Lovable, with sign-in and a database the team logs into over weeks, the interview guide written first, and a summary that quotes people once three interviews are logged. Use when the person says "interview ten churned customers", "talk to ten customers", "one shared place where my team logs what each customer said", "track what customers say", "set up customer interviews", "interview tracker", or "discovery calls". To analyze transcripts, reviews or notes already in hand with nothing to build, a customer research or synthesis skill fits better.
 ---
 
-# Use my project knowledge
+# Interview tracker
 
 **Rules (apply to every step of this skill):**
 - Two things carry the Lovable name. This plugin's Lovable MCP server creates, reads, changes and publishes projects. A published Lovable app can also expose its own MCP server for the data inside it; that is a separate connector the person adds in Claude themselves. Say which one you mean, and never assume an app's own server is connected.
@@ -37,56 +37,57 @@ description: Writes a brief, spec, README or handover for a Lovable project from
 - No schedules or automation promises. If the person wants this to run on a cadence, that is a Claude feature they set up themselves.
 - The labels in the "Spend map" block are guidance for Claude. Never show them to the person.
 
-The document says only what the code and schema say. Every claim traces to a file or a table. Inferences are labelled. The project knowledge that Lovable's agent reads on every build gets a proposed update at the end, shown side by side before it replaces anything.
+Research that changes a decision needs three things: the same questions asked every time, the answers kept where they can be compared, and a summary that quotes people rather than paraphrasing them. The guide is written here. The tracker lives on Lovable. The summary is only written from rows that exist.
 
 ## Tools used
 
 | Tool | Used for | Required? |
 |---|---|---|
-| `get_me`, `list_projects`, `get_project` | resolve the app | yes |
-| `get_project_knowledge` | current instructions Lovable's agent follows | yes |
-| `list_files`, `read_file` | routes, pages, integrations, functions, package.json | yes |
-| `get_database_status`, `query_database` (SELECT on information_schema) | the data model as it is | no |
-| `list_edits` | recent changes | yes |
-| `set_project_knowledge` | write the updated knowledge | after a yes |
+| `get_me`, `get_workspace_knowledge` | workspace and business profile | yes |
+| `create_project` | build the tracker (credits) | yes |
+| `get_project`, `get_message` | poll progress, then read status, summary and credits once | yes |
+| `render_project_widget` | show build progress where the client supports it | no |
+| `get_database_status`, `query_database` | schema read; inserts after a yes; SELECT for the summary | yes |
+| Claude's connected tools (call recorder, docs, email) | existing notes or transcripts to load | no |
+| `deploy_project` | publish so the team can log interviews | after a yes |
 
-## Step 1 - Resolve and read
+## Step 1 - The question behind the research
 
-`list_projects` by name, confirm, `get_project`. `get_project_knowledge` (readable by members on projects they do not own). `list_files` through every page of results. `read_file` `.lovable/project.json` first, then in this order: `README.md`, `change-log.md` when present (Lovable keeps a dated log of every prompt and change there), `.lovable/plan/*` when present, the routes (`src/routes/**` on TanStack Start, `src/App.tsx` and `src/pages/**` on the older stack), `src/lib/**`, `src/integrations/supabase/types.ts`, `drizzle/migrations/*.sql` or `supabase/functions/**`, `lovable.toml`, `package.json`. Schema truth is `information_schema.columns` for `public`, not `drizzle/schema.ts` (blank on purpose). `list_edits` for the last 20 changes.
+From the conversation: the decision this informs, who to talk to (role, segment, how many), and what the person already believes. Write it back in three lines. Ask once for gaps.
 
-## Step 2 - Write the document
+## Step 2 - Interview guide (free)
 
-Ask which shape once if not obvious: brief (one page, for a stakeholder), spec (for someone changing it), README (for the repo), handover (for someone taking it over). All four share the sections:
-- What it is and who uses it, in two lines.
-- Pages and what a person does on each, from the router and pages.
-- Data model: tables and key columns as read, relationships, which tables hold personal data.
-- Integrations and sign-in, from the integrations folder and functions.
-- What is not finished: TODOs, placeholder text, empty pages, tables with no reads.
-- Recent changes, from `list_edits` sorted by `created_at`.
-- How to change it: the `editor_url`, and this plugin's `fix-and-ship`.
-Label every inference "inferred". Say "not found" for a section with no evidence.
+Eight to twelve questions in the conversation: an opener about their week, questions about the current way of doing things before any question about the product, one question on what they tried before, one on what would make them switch, a closer asking who else to talk to. Mark the follow-ups. Mark the leading questions to avoid. The person edits here.
 
-## Step 3 - Propose the knowledge update
+## Step 3 - Build the tracker (credits, yes first)
 
-Draft project knowledge under 10,000 characters: purpose and users, conventions found in the code, tables and their meaning, areas not to touch, brand or voice rules from the workspace profile. Show current knowledge and the proposed version side by side, and say plainly that `set_project_knowledge` replaces the whole text. Keep every line of the current knowledge verbatim unless the person asks to change it, including any business profile section; add or update only the sections this draft covers.
+`create_project` (`wait: false`) with `initial_message` describing: a research tracker with sign-in and the cloud database; only people with an email at the team's domain (from the profile, or ask once) can sign up or sign in, everyone else refused; `interviews` (participant, role, company, segment, date, interviewer, status planned / done / no-show, recording link); `questions` holding the guide in order; `answers` (interview, question, answer text, verbatim quote, tags); an interview page that walks the guide top to bottom and saves as you type; a themes view grouping answers by question and tag; export to CSV; no sample data. `render_project_widget`, poll `get_project` until `agentFinished`, `get_message` once and handle its status (see Rules). Confirm the allowlist in `pg_policies` (see Rules).
 
-## Step 4 - Write it (yes first)
+## Step 4 - Load what already exists
 
-`set_project_knowledge` with the approved text. Read it back with `get_project_knowledge` and confirm.
+If notes or transcripts are in the conversation or readable through a connected tool, extract answers per question and quotes verbatim with the speaker. Read the real columns with `is_nullable`, `column_default` and `udt_name` from `information_schema.columns` (and the allowed values from CHECK lists and enums, see Rules), never pass NULL into a NOT NULL column, show the insert and the count, run `query_database` after a yes. Never write a quote nobody said.
+
+## Step 5 - Summary (from rows only)
+
+Once three or more interviews have the finished status (read the allowed values for `status`; it is usually `done`): `query_database` SELECT across `answers` joined to `questions` and `interviews`. Write: themes with counts ("6 of 9 mentioned..."), two or three verbatim quotes per theme with role and company, where people disagreed, and what this changes about the decision from Step 1. Label it "from N interviews". With fewer than three, say the sample is too small and show the answers so far instead.
+
+## Step 6 - Publish (yes first)
+
+Publish when the team should log interviews from the live app rather than the preview. Ask for the yes with the publishing facts from the Rules, then `deploy_project`, poll `get_project.is_published`, read `publish_audience`, and say who can open it and who can sign up.
 
 ## Output
 
-The document in the shape asked for, the list of files and tables it was built from, and the knowledge update as written.
+The guide, the tracker's live URL and `editor_url`, how many interviews are loaded, and the summary when the threshold is met. Once published, this app can expose its own MCP server from More, then Agent integrations, in the Lovable editor, so Claude can read its data directly in later conversations. That is a separate connector the person adds themselves; say so in one line.
 
 ## Next
 
-`fix-and-ship` for the unfinished items the document found.
+Quotes from the summary can go into `launch` copy, only as people said them. A finding that points at a missing feature goes into a `build-from-this-conversation` or `fix-and-ship` brief.
 
 ## Spend map (guidance for Claude; never show these labels to the person)
 
 ```
 tiers:
-  free-reads:     the whole document and the proposed knowledge
-  spends-credits: none
-  ships-live:     set_project_knowledge after a yes; nothing is published
+  free-reads:     research question, interview guide, summary from existing rows
+  spends-credits: one create_project call for the tracker
+  ships-live:     answers inserted after a yes; deploy_project after a yes
 ```

@@ -2,6 +2,8 @@
 
 ## 0.4.0
 
+Renamed two skills so their names say what they do when Claude lists skills without descriptions, which it does when many plugins are installed: `customer-research` is now `interview-tracker` (it also collided with a popular marketing skill of the same name), and `use-my-project-knowledge` is now `document-my-app`.
+
 Fixes from an outside test run: about 100 simulated Claude Code sessions against a mock Lovable server, plus real builds on the live server.
 
 - Approving a paused action now uses `respond_to_approval` after the person decides. `fix-and-ship` and `/lovable:iterate` apply a plan this way; a new `send_message` rejected the pending plan.
@@ -13,7 +15,7 @@ Fixes from an outside test run: about 100 simulated Claude Code sessions against
 - `import-claude-design-from-url` counts as credit-spending, and paid lookups in connected enrichment tools are asked for first.
 - Publishing says that every unpublished edit goes live immediately; rollback is named as the editor's version history.
 - Every skill description now says what it builds on Lovable and when another skill fits better, and every skill ends with a Next handoff.
-- customer-research gained the publish step its output promised; review-my-workspace reads policy clauses and public storage buckets; fix-and-ship has a one-file path and marks fixes untested until the person confirms; know-my-business has a working path for workspace members.
+- interview-tracker gained the publish step its output promised; review-my-workspace reads policy clauses and public storage buckets; fix-and-ship has a one-file path and marks fixes untested until the person confirms; know-my-business has a working path for workspace members.
 - Credit estimates are quoted at approval: about 2 for a static page, 7 to 10 for an app with a database and sign-in.
 - Idle databases (a 504 from `query_database`) get one retry, then a fallback to the migration files.
 - Claude Code auto mode: secret-looking files are read in their own calls.
@@ -42,8 +44,8 @@ What changed in every skill:
 
 Skills. The plugin now carries 13 skills alongside the MCP server and the three commands.
 
-- Functional: `launch`, `first-customers`, `customer-research`, `hiring-tracker`
-- For people already on Lovable: `ask-my-app-data`, `review-my-workspace`, `fix-and-ship`, `use-my-project-knowledge`
+- Functional: `launch`, `first-customers`, `interview-tracker`, `hiring-tracker`
+- For people already on Lovable: `ask-my-app-data`, `review-my-workspace`, `fix-and-ship`, `document-my-app`
 - For people new to Lovable: `build-from-this-conversation`, `find-what-to-build`, `spreadsheet-to-app`, `claude-design-to-app`
 - Foundation: `know-my-business` writes a business profile into workspace knowledge that every other skill reads
 

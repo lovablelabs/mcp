@@ -85,7 +85,7 @@ The live URL and who can open it, the `editor_url`, credits spent, what v1 has i
 
 ## Next
 
-`ask-my-app-data` for its numbers, `fix-and-ship` for changes, `launch` to announce it, `first-customers` if the next question is who to sell to, `use-my-project-knowledge` to write it down for whoever comes next.
+`ask-my-app-data` for its numbers, `fix-and-ship` for changes, `launch` to announce it, `first-customers` if the next question is who to sell to, `document-my-app` to write it down for whoever comes next.
 
 ## Spend map (guidance for Claude; never show these labels to the person)
 
