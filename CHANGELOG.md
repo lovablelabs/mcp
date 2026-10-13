@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.4.0
+
+Fixes from an outside test run: about 100 simulated Claude Code sessions against a mock Lovable server, plus real builds on the live server.
+
+- Approving a paused action now uses `respond_to_approval` after the person decides. `fix-and-ship` and `/lovable:iterate` apply a plan this way; a new `send_message` rejected the pending plan.
+- Pauses are read from `get_message`, not `agentFinished`, which can be true while a turn is paused. Questions in a completed summary are shown to the person word for word.
+- Access: sign-in no longer counts as protection. Apps that hold people's data are built with an email allowlist, and no skill calls an app safe to share. `review-my-workspace` flags open sign-up on tables every signed-in user can read.
+- Allowed values are read from CHECK constraints as well as enums, filtered to the `public` schema.
+- Visibility is read from the create response and changed only when `restricted`. `workspace_view` is never set unprompted; it fails on Pro.
+- An evidence rule: every claim comes from a tool result or the person, Lovable's summaries are reports rather than proof, and copy carries only given facts.
+- Credit estimates are quoted at approval: about 2 for a static page, 7 to 10 for an app with a database and sign-in.
+- Idle databases (a 504 from `query_database`) get one retry, then a fallback to the migration files.
+- Claude Code auto mode: secret-looking files are read in their own calls.
+- `/lovable:db` no longer calls `get_database_connection_info`, which the server does not have. `/lovable:build` no longer polls with `send_message`.
+
+
 ## 0.3.0
 
 Hardened after live runs of every skill against the Lovable MCP, on a workspace where the person was admin and one where they were a member. Three apps were built end to end: a hiring tracker, a spreadsheet import, and a Claude Design import made functional.

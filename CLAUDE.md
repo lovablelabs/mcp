@@ -26,8 +26,8 @@ Editing a skill: edit `scripts/generate-skills.py` and run it, so the Rules bloc
 | Command | What it does | Lovable tools used |
 |---|---|---|
 | `/lovable:build <description>` | Create a new project from a prompt, follow the build, and optionally deploy to a live URL | `list_workspaces`, `create_project`, `send_message`, `get_project`, `deploy_project` |
-| `/lovable:iterate <project> — <change>` | Send a change request to a project's agent (plan-first for big changes) and review the unified diff | `list_projects`, `send_message`, `get_message`, `get_diff`, `list_edits` |
-| `/lovable:db <project> [SQL]` | Check/enable a Lovable Cloud Postgres database and run SQL with confirmation | `get_database_status`, `enable_database`, `query_database`, `get_database_connection_info` |
+| `/lovable:iterate <project> - <change>` | Send a change request to a project's agent (plan-first for big changes) and review the unified diff | `list_projects`, `send_message`, `get_message`, `respond_to_approval`, `get_diff`, `list_edits` |
+| `/lovable:db <project> [SQL]` | Check/enable a Lovable Cloud Postgres database and run SQL with confirmation | `get_database_status`, `enable_database`, `query_database` |
 
 Every other Lovable MCP tool (analytics, knowledge/governance, connectors, file inspection, templates, …) is also available to Claude Code once the plugin is installed — the commands above just package the common flows.
 

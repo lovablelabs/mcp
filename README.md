@@ -25,7 +25,7 @@ Restart Claude Code after installing. Verify with `/mcp` (look for `lovable`) or
 
 ## Skills
 
-Skills run when your request matches, or directly by name (for example `/lovable:launch`). Every skill reads the workspace's business profile first, asks before spending credits, reports what each call cost, and stops before publishing. The skills were run end to end against the live Lovable MCP before this release; what that changed is in [CHANGELOG.md](CHANGELOG.md) and [CONNECTORS.md](CONNECTORS.md).
+Skills run when your request matches, or directly by name (for example `/lovable:launch`). Every skill reads the workspace's business profile first, asks before spending credits, reports what each call cost, stops before publishing, and claims only what a tool result shows. The skills were run end to end against the live Lovable MCP before this release; what that changed is in [CHANGELOG.md](CHANGELOG.md) and [CONNECTORS.md](CONNECTORS.md).
 
 ### Start here
 
@@ -67,7 +67,7 @@ Three commands for people who want the direct route. They predate the skills and
 | Command | What it does |
 |---|---|
 | `/lovable:build <description>` | Create a project from a prompt, follow the build, optionally deploy |
-| `/lovable:iterate <project> — <change>` | Send a change request, plan first for big ones, review the diff |
+| `/lovable:iterate <project> - <change>` | Send a change request, plan first for big ones, review the diff |
 | `/lovable:db <project> [SQL]` | Check or enable a project's database and run SQL with confirmation |
 
 ## Example workflows
@@ -98,7 +98,7 @@ Our storage bill tripled this month. Find out why and fix it.
 
 ## Credits and safety
 
-Two tools spend Lovable credits: `create_project` and `send_message`. Everything else is free. Every skill says what it is about to build and waits for a yes before either call, one yes per call. Every skill stops before `deploy_project`, before any database write, and before creating a second project. `deploy_project` publishes a public URL on Free and Pro plans; apps that hold personal data are built with sign-in required. See [CONNECTORS.md](CONNECTORS.md) for the full table.
+Three calls spend Lovable credits: `create_project`, `send_message`, and an approved `respond_to_approval`. Everything else is free. Every skill says what it is about to build, quotes the likely cost (about 2 credits for a static page, 7 to 10 for an app with a database and sign-in), and waits for a yes, one yes per call. Every skill stops before `deploy_project`, before any database write, and before creating a second project. `deploy_project` publishes a public URL on Free and Pro plans. Sign-in alone does not limit who gets in, since anyone can create an account by default, so apps that hold personal data are built with an email allowlist naming the domains or addresses that may sign up. See [CONNECTORS.md](CONNECTORS.md) for the full table.
 
 ## Two things are called Lovable
 

@@ -19,7 +19,8 @@ Every skill in this plugin runs on this server. No skill works without it.
 
 | Tool | Spends credits | The skill... |
 |---|---|---|
-| `create_project`, `send_message` | Yes | says what it is about to build and waits for a yes, one yes per call |
+| `create_project`, `send_message` | Yes | says what it is about to build, quotes the likely cost, and waits for a yes, one yes per call |
+| `respond_to_approval` | Yes, when approved | shows the paused action Lovable proposed and passes on the person's decision; never answers a pause itself |
 | `deploy_project` | No | asks before publishing |
 | `query_database` with INSERT, UPDATE, DELETE or DDL | No | shows the statement and asks before running it |
 | `set_workspace_knowledge`, `set_project_knowledge` | No | shows current and proposed text, asks, then replaces |
@@ -46,11 +47,15 @@ Reads only. No skill writes to any of these.
 |---|---|---|
 | Blocking build call | Timed out at the client after several minutes; the project existed anyway | `wait: false`, poll `get_project`, recover by owner and time |
 | Project names | Lovable picks its own, whatever the message asked for | Use the returned id, never the requested name |
-| Visibility | New projects are `restricted` | `set_project_visibility` for team apps |
-| Publishing | `deploy_project` returns `pending`; Enterprise workspaces may publish to the workspace by default | Poll `is_published`, report `publish_audience` |
+| Visibility | New projects start `restricted` in some workspaces and `workspace_edit` in others; `workspace_view` fails on Pro | Read `visibility` from the create response and change it only when it is `restricted` |
+| Publishing | `deploy_project` returns `pending`; Enterprise workspaces may publish to the workspace by default; `publish_audience` appears only once published | Poll `is_published`, report `publish_audience` |
 | Workspace knowledge | 403 for members, works for admins | Fall back to project knowledge |
-| Sign-in | Some workspaces allow Lovable SSO only | Ask for "sign-in as the workspace allows" |
-| Writes | NULL into a NOT NULL column failed and rolled back the whole statement; rows carry `changed_by = unknown` | Read nullability and enums first; disclose attribution |
+| Sign-in | Some workspaces allow Lovable SSO only. Anyone can create an account by default, and default policies let every signed-in user read every row | Ask for sign-in as the workspace allows, plus an email allowlist for apps with people's data; never call an app safe to share |
+| Pauses | A paused turn can report `agentFinished` true; a new message rejects a pending approval; completed summaries can carry questions | Read `get_message` status, answer pauses with `respond_to_approval` after the person decides, show questions word for word |
+| Allowed values | Status columns are usually text with a CHECK list, not enums | Read both, filtered to the `public` schema |
+| Idle databases | `query_database` can return 504 on a project nobody has opened lately | Retry once, then read the migration files and say so |
+| Writes | NULL into a NOT NULL column failed and rolled back the whole statement; rows carry `changed_by = unknown` | Read nullability and allowed values first; disclose attribution |
+| Summaries | Lovable's summary can say "deployed" or "tested" when it was not | Confirm with a tool call before repeating it |
 | Uploads | PUT without the returned headers was refused (400) | Send `Content-Type` plus every returned header |
 | Big payloads | `get_message` can run past 100,000 characters; a few weeks of calendar past 250,000 | Read once, read fields, page small |
 

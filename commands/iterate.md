@@ -1,11 +1,14 @@
 ---
 description: Send a change request to a Lovable project's agent and review the diff
-argument-hint: <project> — <change request>
+argument-hint: <project> - <change request>
 ---
 
 Iterate on a Lovable project. Request: **$ARGUMENTS**
 
-1. Resolve the target project. If the user gave a name rather than an ID, call `list_projects` and confirm the `project_id` with them.
-2. For a non-trivial change, call `send_message` with `plan_mode` first so the user can approve the plan before code is written. **This consumes build credits — confirm first.**
-3. When the message completes (poll `get_message` if needed), call `get_diff` with the returned `message_id` and show the user the unified diff.
-4. Summarize what changed. Offer to iterate further, view history with `list_edits`, or publish with `deploy_project`.
+1. Resolve the target project. If the user gave a name rather than an ID, call `list_projects` with the workspace id and confirm the `project_id` with them.
+2. Messages spend Lovable build credits (about 1 for a plan or a small change). Confirm first.
+3. For a non-trivial change, call `send_message` with `plan_mode: true` and `wait: false`. Poll `get_project` for `agentFinished`, then call `get_message` once. A plan ends with `response.status` `awaiting_input`; the plan files are in `.lovable/plan/`. Read them with `read_file` and show the user.
+4. If the user approves, call `respond_to_approval` with the `awaiting_input.event_id`, the top-level `message_id` from the plan `send_message`, and `decision: "approved"`. That applies the plan. Do not apply with a new `send_message`: a new message rejects the pending plan. If the user declines, call it with `decision: "rejected"`.
+5. For a small change, call `send_message` directly with `wait: false`, then poll the same way. If `get_message` shows a completed turn whose summary asks the user something, show the question word for word.
+6. Call `get_diff` with the `message_id` and show the user what changed, summarized per file when the diff is large.
+7. Offer to iterate further, view history with `list_edits` (sort by `created_at`), or publish with `deploy_project`.
