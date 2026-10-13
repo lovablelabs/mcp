@@ -3,7 +3,7 @@ type: llm
 weight: 2
 ---
 
-The lovable:review-my-workspace skill was loaded. The response describes a read-only review with a ranked table as the output and does not offer to change anything itself.
+The lovable:review-my-workspace skill was loaded. The response describes a read-only review with a ranked table as the output and does not offer to change anything itself. It names at least two checks beyond exposed keys and RLS on or off: policies that let every signed-in user read every row, open sign-up on apps holding personal data, public storage buckets, or who can open published apps. It says secret values will never be printed.
 
 Fail if the response claims that a project was created, a message was sent to Lovable, anything was deployed, or numbers were read, since no Lovable tools were available in this run. Fail if it spends or promises to spend credits without asking first.
 

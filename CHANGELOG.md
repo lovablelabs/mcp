@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.4.1
+
+Fixes from the 0.4 live test: all 13 skills run on a separate test workspace, 7 apps built.
+
+- Access now covers every team app, not only apps that hold people's data: a team tool gets the email allowlist in the database, a public app gets policies that keep each person to their own rows. Every app with sign-in reports who can sign up and who can read and change what.
+- The verified-email check runs at sign-in, never when the account row is created. Built as a trigger before insert on `auth.users`, it refused every email-and-password sign-up; build checks and `review-my-workspace` now report that as High.
+- The sign-up check is looked for in both places Lovable builds it: a trigger on `auth.users` (read from `pg_trigger`) and the sign-in code (`src/integrations/auth/auth.server.ts` for Lovable Auth, `src/integrations/supabase/` and `src/integrations/lovable/` otherwise).
+- Emails are compared in lower case on both sides; a one-sided `lower()` is flagged.
+- When the policies or the sign-up check fall short, every build skill offers one fix message with its own yes, then checks again.
+- `list_edits` returns the oldest edits first. Recent changes now come from the last page, following `pagination.next_cursor`.
+- Before asking to publish, skills say who will likely be able to open the URL from the workspace plan, and warn when the profile's `Never public` line or the app's data says it must stay private.
+- `know-my-business` has a `Sign-in domain` line and always asks for it; every build reads it.
+- `review-my-workspace` flags columns named like credentials, first-sign-up-becomes-admin triggers, and personal data every signed-in user can read on an unpublished app (Medium, High once published).
+- `ask-my-app-data` handles empty tables and questions across two apps, and gives the row-count SQL.
+- `find-what-to-build` says which source was skipped when a read is refused and asks the questions for that part.
+- `interview-tracker`: the guide is seeded and editable in the app, with no other sample data.
+- `launch` writes one "what's new" block per fact instead of padding to three.
+- `fix-and-ship` quotes the rollback version and "fixed in the code, not tested" at the yes for one-file fixes too.
+- Eval graders for `launch`, `document-my-app`, `interview-tracker` and `review-my-workspace` now need plugin-specific behaviour, so the no-plugin baseline fails them.
+
 ## 0.4.0
 
 Renamed two skills so their names say what they do when Claude lists skills without descriptions, which it does when many plugins are installed: `customer-research` is now `interview-tracker` (it also collided with a popular marketing skill of the same name), and `use-my-project-knowledge` is now `document-my-app`.
