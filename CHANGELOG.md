@@ -18,6 +18,7 @@ Fixes from the 0.4 live test: all 13 skills run on a separate test workspace, 7 
 - `interview-tracker`: the guide is seeded and editable in the app, with no other sample data.
 - `launch` writes one "what's new" block per fact instead of padding to three.
 - `fix-and-ship` quotes the rollback version and "fixed in the code, not tested" at the yes for one-file fixes too.
+- `/lovable:build` follows the same access rule.
 - Eval graders for `launch`, `document-my-app`, `interview-tracker` and `review-my-workspace` now need plugin-specific behaviour, so the no-plugin baseline fails them.
 
 ## 0.4.0
