@@ -16,7 +16,7 @@ Fixes from an outside test run: about 100 simulated Claude Code sessions against
 - Publishing says that every unpublished edit goes live immediately; rollback is named as the editor's version history.
 - Every skill description now says what it builds on Lovable and when another skill fits better, and every skill ends with a Next handoff.
 - interview-tracker gained the publish step its output promised; review-my-workspace reads policy clauses and public storage buckets; fix-and-ship has a one-file path and marks fixes untested until the person confirms; know-my-business has a working path for workspace members.
-- Credit estimates are quoted at approval: about 2 for a static page, 7 to 10 for an app with a database and sign-in.
+- Credit estimates are quoted at approval: about 2 for a static page, 7 to 11 for an app with a database and sign-in.
 - Idle databases (a 504 from `query_database`) get one retry, then a fallback to the migration files.
 - Claude Code auto mode: secret-looking files are read in their own calls.
 - `/lovable:db` no longer calls `get_database_connection_info`, which the server does not have. `/lovable:build` no longer polls with `send_message`.
