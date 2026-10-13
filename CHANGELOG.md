@@ -20,6 +20,11 @@ Fixes from an outside test run: about 100 simulated Claude Code sessions against
 - Idle databases (a 504 from `query_database`) get one retry, then a fallback to the migration files.
 - Claude Code auto mode: secret-looking files are read in their own calls.
 - `/lovable:db` no longer calls `get_database_connection_info`, which the server does not have. `/lovable:build` no longer polls with `send_message`.
+- When Lovable is not connected, a skill still asks its questions and writes its free steps (brief, scorecard, interview guide) in the same reply, and says what it will build and that credit-spending steps wait for a yes.
+- Access is described to the person as "only people with an email at <domain> can sign up, and the database refuses everyone else", never as sign-in limited to a domain.
+- `ask-my-app-data` says up front that it reads the schema first and runs read-only queries. `claude-design-to-app` asks for the brief before the design arrives and keeps the design as is.
+- Sharper `interview-tracker` description, preferred over a shared page or document when several people log interviews over weeks.
+- Eval graders accept "not connected, here is where to connect, here is what I need" as the correct answer when no Lovable tools are present.
 
 
 ## 0.3.0
