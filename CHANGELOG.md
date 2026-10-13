@@ -6,10 +6,14 @@ Fixes from an outside test run: about 100 simulated Claude Code sessions against
 
 - Approving a paused action now uses `respond_to_approval` after the person decides. `fix-and-ship` and `/lovable:iterate` apply a plan this way; a new `send_message` rejected the pending plan.
 - Pauses are read from `get_message`, not `agentFinished`, which can be true while a turn is paused. Questions in a completed summary are shown to the person word for word.
-- Access: sign-in no longer counts as protection. Apps that hold people's data are built with an email allowlist, and no skill calls an app safe to share. `review-my-workspace` flags open sign-up on tables every signed-in user can read.
+- Access: sign-in no longer counts as protection. Apps that hold people's data are built with an email allowlist enforced in the database policies, confirmed in `pg_policies` after the build, and no skill calls an app safe to share. `review-my-workspace` flags open sign-up on tables every signed-in user can read.
 - Allowed values are read from CHECK constraints as well as enums, filtered to the `public` schema.
-- Visibility is read from the create response and changed only when `restricted`. `workspace_view` is never set unprompted; it fails on Pro.
+- Visibility is read from the create response and changed only when the person wants teammates to edit, after a yes. Project visibility (editor access) and publish audience (app access) are kept apart. `workspace_view` and `restricted` are never set unprompted; both fail on Pro.
 - An evidence rule: every claim comes from a tool result or the person, Lovable's summaries are reports rather than proof, and copy carries only given facts.
+- `import-claude-design-from-url` counts as credit-spending, and paid lookups in connected enrichment tools are asked for first.
+- Publishing says that every unpublished edit goes live immediately; rollback is named as the editor's version history.
+- Every skill description now says what it builds on Lovable and when another skill fits better, and every skill ends with a Next handoff.
+- customer-research gained the publish step its output promised; review-my-workspace reads policy clauses and public storage buckets; fix-and-ship has a one-file path and marks fixes untested until the person confirms; know-my-business has a working path for workspace members.
 - Credit estimates are quoted at approval: about 2 for a static page, 7 to 10 for an app with a database and sign-in.
 - Idle databases (a 504 from `query_database`) get one retry, then a fallback to the migration files.
 - Claude Code auto mode: secret-looking files are read in their own calls.

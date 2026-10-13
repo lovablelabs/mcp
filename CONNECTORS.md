@@ -20,8 +20,10 @@ Every skill in this plugin runs on this server. No skill works without it.
 | Tool | Spends credits | The skill... |
 |---|---|---|
 | `create_project`, `send_message` | Yes | says what it is about to build, quotes the likely cost, and waits for a yes, one yes per call |
+| `import-claude-design-from-url` | Yes | creates a project and runs a first build; says so with an estimate and waits for a yes |
 | `respond_to_approval` | Yes, when approved | shows the paused action Lovable proposed and passes on the person's decision; never answers a pause itself |
-| `deploy_project` | No | asks before publishing |
+| `deploy_project` | No | asks before publishing, and says that every unpublished edit goes live, now |
+| `set_project_visibility` | No | asks first; `workspace_edit` gives every workspace member edit rights to the project's code and data |
 | `query_database` with INSERT, UPDATE, DELETE or DDL | No | shows the statement and asks before running it |
 | `set_workspace_knowledge`, `set_project_knowledge` | No | shows current and proposed text, asks, then replaces |
 | Everything else (`get_*`, `list_*`, `read_file`, `get_diff`, SELECT queries) | No | runs without asking |
@@ -47,10 +49,10 @@ Reads only. No skill writes to any of these.
 |---|---|---|
 | Blocking build call | Timed out at the client after several minutes; the project existed anyway | `wait: false`, poll `get_project`, recover by owner and time |
 | Project names | Lovable picks its own, whatever the message asked for | Use the returned id, never the requested name |
-| Visibility | New projects start `restricted` in some workspaces and `workspace_edit` in others; `workspace_view` fails on Pro | Read `visibility` from the create response and change it only when it is `restricted` |
+| Visibility | New projects start `restricted` in some workspaces and `workspace_edit` in others; `workspace_view` and `restricted` fail on Pro; project visibility is editor access, not app access | Read `visibility` from the create response, leave it unless teammates should edit, and ask first; app access is the publish audience |
 | Publishing | `deploy_project` returns `pending`; Enterprise workspaces may publish to the workspace by default; `publish_audience` appears only once published | Poll `is_published`, report `publish_audience` |
-| Workspace knowledge | 403 for members, works for admins | Fall back to project knowledge |
-| Sign-in | Some workspaces allow Lovable SSO only. Anyone can create an account by default, and default policies let every signed-in user read every row | Ask for sign-in as the workspace allows, plus an email allowlist for apps with people's data; never call an app safe to share |
+| Workspace knowledge | 403 for members, works for admins | Keep the profile in the conversation and the person's Claude instructions |
+| Sign-in | Some workspaces allow Lovable SSO only. Anyone can create an account by default, and default policies let every signed-in user read every row | Ask for sign-in as the workspace allows, plus an email allowlist enforced in the database policies for apps with people's data, confirmed in `pg_policies`; never call an app safe to share |
 | Pauses | A paused turn can report `agentFinished` true; a new message rejects a pending approval; completed summaries can carry questions | Read `get_message` status, answer pauses with `respond_to_approval` after the person decides, show questions word for word |
 | Allowed values | Status columns are usually text with a CHECK list, not enums | Read both, filtered to the `public` schema |
 | Idle databases | `query_database` can return 504 on a project nobody has opened lately | Retry once, then read the migration files and say so |

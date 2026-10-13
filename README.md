@@ -31,7 +31,7 @@ Skills run when your request matches, or directly by name (for example `/lovable
 
 | Skill | What you say | What you get |
 |---|---|---|
-| `know-my-business` | "Set me up", "tell Lovable about my company" | A short business profile written into workspace knowledge. Every other skill reads it instead of asking again. Spends nothing. |
+| `know-my-business` | "Tell Lovable about my company" | A short business profile written into workspace knowledge. Every other skill reads it instead of asking again. Spends nothing. |
 
 ### Get the work done
 
@@ -98,7 +98,7 @@ Our storage bill tripled this month. Find out why and fix it.
 
 ## Credits and safety
 
-Three calls spend Lovable credits: `create_project`, `send_message`, and an approved `respond_to_approval`. Everything else is free. Every skill says what it is about to build, quotes the likely cost (about 2 credits for a static page, 7 to 10 for an app with a database and sign-in), and waits for a yes, one yes per call. Every skill stops before `deploy_project`, before any database write, and before creating a second project. `deploy_project` publishes a public URL on Free and Pro plans. Sign-in alone does not limit who gets in, since anyone can create an account by default, so apps that hold personal data are built with an email allowlist naming the domains or addresses that may sign up. See [CONNECTORS.md](CONNECTORS.md) for the full table.
+Four calls spend Lovable credits: `create_project`, `send_message`, an approved `respond_to_approval`, and `import-claude-design-from-url`. Everything else is free. Every skill says what it is about to build, quotes the likely cost (about 2 credits for a static page, 7 to 10 for an app with a database and sign-in), and waits for a yes, one yes per call. Every skill stops before `deploy_project`, before any database write, and before creating a second project. `deploy_project` publishes a public URL on Free and Pro plans. Sign-in alone does not limit who gets in, since anyone can create an account by default, so apps that hold personal data are built with an email allowlist naming the domains or addresses that may sign up, enforced in the database policies rather than only in the page, and checked in `pg_policies` after the build. See [CONNECTORS.md](CONNECTORS.md) for the full table.
 
 ## Two things are called Lovable
 
@@ -110,7 +110,7 @@ Claude (web and desktop), Cowork, and Claude Code. Skills that need to upload a 
 
 ## For admins
 
-Enterprise workspaces enable third-party MCP clients under Settings, Security, Privacy and security before anyone can sign in from Claude. The server acts with each person's own Lovable permissions. Leave `deploy_project` and `query_database` on "ask" in Claude's connector settings to make the skills' own stops enforced.
+Enterprise workspaces enable third-party MCP clients under Settings, Security, Privacy and security before anyone can sign in from Claude. The server acts with each person's own Lovable permissions. Every skill already asks before it spends credits, publishes, writes data or changes who can edit a project. To make those stops enforced rather than only promised, set these tools to "ask" in Claude's connector settings: `create_project`, `send_message`, `respond_to_approval`, `import-claude-design-from-url`, `deploy_project`, `set_project_visibility`, `set_workspace_knowledge` and `set_project_knowledge`. `query_database` runs read-only SELECTs as well as writes, so setting it to "ask" also prompts on every read.
 
 ---
 
@@ -205,14 +205,14 @@ Full tool reference: [Lovable MCP documentation](https://docs.lovable.dev/integr
 ### Common workflow
 
 ```
-1. list_workspaces()                       → workspace_id
+1. get_me()                                → workspace_id
 2. create_project(workspace_id, ...)       → project_id   (uses credits)
 3. send_message(project_id, "Add ...")     → message_id   (uses credits)
 4. get_diff(project_id, message_id)        → review changes
 5. deploy_project(project_id)              → live URL
 ```
 
-Most tools need a `workspace_id`; call `list_workspaces` first. `read_file` takes a git ref; get `latest_commit_sha` from `get_project`.
+Most tools need a `workspace_id`; call `get_me` first. `read_file` takes a git ref; get `latest_commit_sha` from `get_project`.
 
 ### Troubleshooting
 
@@ -221,7 +221,7 @@ Most tools need a `workspace_id`; call `list_workspaces` first. `read_file` take
 | `401 Unauthorized` or expired token | Re-run your client's login flow to refresh the OAuth token |
 | OAuth window loops or never completes | Confirm the client passes the `auth.CLIENT_ID` shown above |
 | "Transport not supported" | The client must support Streamable HTTP |
-| Tool fails on a missing `workspace_id` | Call `list_workspaces` first and pass the returned ID |
+| Tool fails on a missing `workspace_id` | Call `get_me` first and pass the returned workspace ID |
 | `lovable` not shown in `/mcp` | Confirm the plugin is enabled (`/plugin`), then restart Claude Code |
 
 ### Registry
