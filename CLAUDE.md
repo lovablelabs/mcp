@@ -10,7 +10,7 @@ Lovable builds and hosts full-stack apps; Claude Code is your local agent. This 
 
 ## Skills
 
-Thirteen skills, one shared rules block. Each names the Lovable MCP tools it calls in order, asks before `create_project` and `send_message` (the only credit-spending tools), stops before `deploy_project` and any database write, and reads `get_workspace_knowledge` first for the business profile that `know-my-business` writes.
+Thirteen skills, one shared rules block. Each names the Lovable MCP tools it calls in order, asks before the four credit-spending calls (`create_project`, `send_message`, an approved `respond_to_approval`, `import-claude-design-from-url`), stops before `deploy_project` and any database write, and reads `get_workspace_knowledge` first for the business profile that `know-my-business` writes.
 
 | Bucket | Skills |
 |---|---|
@@ -19,7 +19,7 @@ Thirteen skills, one shared rules block. Each names the Lovable MCP tools it cal
 | Apps already on Lovable | `ask-my-app-data`, `review-my-workspace`, `fix-and-ship`, `document-my-app` |
 | New to Lovable | `build-from-this-conversation`, `find-what-to-build`, `spreadsheet-to-app`, `claude-design-to-app` |
 
-Editing a skill: edit `scripts/generate-skills.py` and run it, so the Rules block stays identical across all 13 (it is the contract); do not hand-edit one SKILL.md. Keep keep the "Tools used" table to tools the server actually exposes, the file under 120 lines, and never show the Spend map labels to the person. See `CONNECTORS.md` for the credit and safety table.
+Editing a skill: edit `scripts/generate-skills.py` and run it, so the Rules block stays identical across all 13 (it is the contract); do not hand-edit one SKILL.md. Keep the "Tools used" table to tools the server actually exposes, the file under 120 lines, and never show the Spend map labels to the person. See `CONNECTORS.md` for the credit and safety table.
 
 ## Commands
 
@@ -55,7 +55,7 @@ No keys or config. The bundled server is a remote Streamable HTTP endpoint (`htt
 
 This plugin operates on **real projects** and the commands prompt before any irreversible or billable action:
 
-- 💳 **Credits** — `create_project` and `send_message` (i.e. `/lovable:build` and `/lovable:iterate`) consume Lovable build credits. All other tools are free.
+- 💳 **Credits**: `create_project`, `send_message`, an approved `respond_to_approval` and `import-claude-design-from-url` consume Lovable build credits (so do `/lovable:build` and `/lovable:iterate`). All other tools are free.
 - 🚀 **Public deploys** — `deploy_project` publishes a publicly reachable URL on Free/Pro plans.
 - ⚠️ **Full-permission SQL** — `query_database` (`/lovable:db`) can read, write, and alter schema. The command shows the SQL and asks for confirmation before any write or schema change.
 
