@@ -26,7 +26,7 @@ Every skill in this plugin runs on this server. No skill works without it.
 | `set_project_visibility` | No | asks first; `workspace_edit` gives every workspace member edit rights to the project's code and data |
 | `query_database` with INSERT, UPDATE, DELETE or DDL | No | shows the statement and asks before running it |
 | `set_workspace_knowledge`, `set_project_knowledge` | No | shows current and proposed text, asks, then replaces |
-| Everything else (`get_*`, `list_*`, `read_file`, `get_diff`, SELECT queries) | No | runs without asking |
+| Reading tools (`get_*`, `list_*`, `read_file`, `get_diff`, SELECT queries) | No | runs without asking |
 
 ## Connectors some skills read, if the person has them in Claude
 
@@ -43,23 +43,23 @@ These are the person's own Claude connectors. They are not bundled here, and eve
 
 Reads only. No skill writes to any of these.
 
-## Behaviour seen in live runs
+## How the skills work with the server
 
-| What | What happened | What the skills do about it |
-|---|---|---|
-| Blocking build call | Timed out at the client after several minutes; the project existed anyway | `wait: false`, poll `get_project`, recover by owner and time |
-| Project names | Lovable picks its own, whatever the message asked for | Use the returned id, never the requested name |
-| Visibility | New projects start `restricted` in some workspaces and `workspace_edit` in others; `workspace_view` and `restricted` fail on Pro; project visibility is editor access, not app access | Read `visibility` from the create response, leave it unless teammates should edit, and ask first; app access is the publish audience |
-| Publishing | `deploy_project` returns `pending`; Enterprise workspaces may publish to the workspace by default; `publish_audience` appears only once published | Poll `is_published`, report `publish_audience` |
-| Workspace knowledge | 403 for members, works for admins | Keep the profile in the conversation and the person's Claude instructions |
-| Sign-in | Some workspaces allow Lovable SSO only. Anyone can create an account by default, and default policies let every signed-in user read every row | Ask for sign-in as the workspace allows, plus an email allowlist enforced in the database policies for apps with people's data, confirmed in `pg_policies`; never call an app safe to share |
-| Pauses | A paused turn can report `agentFinished` true; a new message rejects a pending approval; completed summaries can carry questions | Read `get_message` status, answer pauses with `respond_to_approval` after the person decides, show questions word for word |
-| Allowed values | Status columns are usually text with a CHECK list, not enums | Read both, filtered to the `public` schema |
-| Idle databases | `query_database` can return 504 on a project nobody has opened lately | Retry once, then read the migration files and say so |
-| Writes | NULL into a NOT NULL column failed and rolled back the whole statement; rows carry `changed_by = unknown` | Read nullability and allowed values first; disclose attribution |
-| Summaries | Lovable's summary can say "deployed" or "tested" when it was not | Confirm with a tool call before repeating it |
-| Uploads | PUT without the returned headers was refused (400) | Send `Content-Type` plus every returned header |
-| Big payloads | `get_message` can run past 100,000 characters; a few weeks of calendar past 250,000 | Read once, read fields, page small |
+| Area | What the skills do |
+|---|---|
+| Builds | Start `create_project` and `send_message` with `wait: false`, check progress with `get_project`, and read the result from `get_message` once. If a call drops, they find the person's newest project before creating again |
+| Project names | Lovable names each project; the skills use the returned id |
+| Visibility | Read it from the create response and change it only when teammates should edit, after a yes. `workspace_view` and `restricted` need a Business plan or higher. Project visibility (who edits) and publish audience (who opens the app) are kept apart |
+| Publishing | `deploy_project` returns `pending`; the skills check `is_published` and report `publish_audience`. Enterprise workspaces may publish to the workspace by default |
+| Workspace knowledge | Admins write it; members keep the profile in the conversation and their Claude instructions |
+| Access | Team apps get an email allowlist enforced in the database, public apps get policies that keep each person to their own rows, and every build confirms this in the database. No skill calls an app safe to share |
+| Approvals | Answered with `respond_to_approval` after the person decides. Questions in a summary go to the person word for word |
+| Allowed values | Read from enums and CHECK lists in the `public` schema |
+| Quiet databases | One retry after a short wait, then the schema from the migration files |
+| Writes | Nullability and allowed values are read first; rows written through the plugin are labelled as having no signed-in author |
+| Summaries | Before repeating that something is deployed or tested, a skill confirms it with a tool call |
+| Uploads | `Content-Type` plus every header the upload URL returns |
+| Large results | Read once, keep the fields needed, page small |
 
 ## For workspace admins
 

@@ -10,5 +10,5 @@ Work with a Lovable project's database. Input: **$ARGUMENTS**
 3. If the user supplied SQL, run it with `query_database`.
    - `query_database` has full read, write and schema permissions. Show the user the exact SQL and get explicit confirmation before running anything that writes data or alters schema.
    - Before a write, read the target columns' nullability and defaults from `information_schema.columns`, and allowed values from enums and CHECK constraints in the `public` schema.
-   - A 504 or timeout on a project nobody has opened lately usually means the database is idle. Wait about 30 seconds and retry once; if it fails again, say so and suggest opening the app or the editor.
+   - A database nobody has opened lately can take a moment to wake. If a query does not answer, wait about 30 seconds and try once more; if it still does not, say so and suggest opening the app or the editor.
 4. Connection details (connection string, API URL) are not exposed by the Lovable MCP server. Point the user to the Cloud tab in the Lovable editor (`editor_url` from `get_project`).

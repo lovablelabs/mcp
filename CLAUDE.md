@@ -55,7 +55,7 @@ No keys or config. The bundled server is a remote Streamable HTTP endpoint (`htt
 
 This plugin operates on **real projects** and the commands prompt before any irreversible or billable action:
 
-- 💳 **Credits**: `create_project`, `send_message`, an approved `respond_to_approval` and `import-claude-design-from-url` consume Lovable build credits (so do `/lovable:build` and `/lovable:iterate`). All other tools are free.
+- 💳 **Credits**: `create_project`, `send_message`, an approved `respond_to_approval` and `import-claude-design-from-url` consume Lovable build credits (so do `/lovable:build` and `/lovable:iterate`).
 - 🚀 **Public deploys** — `deploy_project` publishes a publicly reachable URL on Free/Pro plans.
 - ⚠️ **Full-permission SQL** — `query_database` (`/lovable:db`) can read, write, and alter schema. The command shows the SQL and asks for confirmation before any write or schema change.
 
