@@ -114,6 +114,14 @@ Enterprise workspaces enable third-party MCP clients under Settings, Security, P
 
 ---
 
+## What this plugin runs and sends
+
+The plugin connects to one server, the Lovable MCP server at `https://mcp.lovable.dev`, and talks to nothing else. It runs no local code: the skills and commands are Markdown instructions for Claude, and `.mcp.json` points at the remote server.
+
+What reaches Lovable is what a skill sends through that server under your own Lovable sign-in: build and edit requests, files you choose to attach, SQL queries against your own project databases, and publish or visibility changes after you say yes. Lovable handles that data under its privacy policy at https://lovable.dev/privacy
+
+`scripts/` and `evals/` are maintainer tooling. `scripts/generate-skills.py` writes the skill files and `evals/` holds test cases. Neither runs when you install or use the plugin.
+
 ## MCP server reference
 
 ### Endpoint

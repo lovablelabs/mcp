@@ -9,14 +9,14 @@ Reference for the Rules in `SKILL.md`. Read the section you need.
 - Plan mode (`send_message` with `plan_mode: true`) ends waiting for approval of a `plan--show` step, with the plan written to `.lovable/plan/`. Read those files and show them; approving applies the plan.
 - If a create call drops: `list_projects` with no query, newest first, and take the project whose `owner_id` matches the id from `get_me`, created in the last few minutes.
 - `render_project_widget` and `import-claude-design-from-url` exist only in some Claude clients. Call them only when they are in the tool list.
-- `list_projects` returns each row under both `data` and `projects`; read one. Keep `limit` at 10 or under. Large results (`get_message`, `get_diff`, long calendar or mail reads): ask for small pages, and in Claude Code parse a saved result with `jq` or Python.
+- Read `list_projects` results from `projects`. Keep `limit` at 10 or under. Large results (`get_message`, `get_diff`, long calendar or mail reads): ask for small pages, and in Claude Code parse a saved result with `jq` or Python.
 
 ## Where things live
 
 - Read `.lovable/project.json` first. Template `tanstack_start_ts_current`: routes in `src/routes/` (signed-in pages under `src/routes/_authenticated/`), the schema in `drizzle/migrations/*.sql` (`drizzle/schema.ts` is left blank), sign-in under `src/integrations/auth/` (Lovable Auth) or under `src/integrations/supabase/` and `src/integrations/lovable/`.
 - Older React and Vite projects: pages in `src/pages/`, functions in `supabase/functions/`, the schema in `supabase/migrations/*.sql`.
 - `lovable.toml` names an attached design system. Some projects keep a `change-log.md`; read it when it exists.
-- Recent edits: `list_edits` lists edits oldest first. Call it with `limit` 50 and pass `pagination.next_cursor` back as `cursor` until `has_more` is false; the newest edits are on the last page.
+- Recent edits: `list_edits` is ordered oldest to newest. Call it with `limit` 50 and pass `pagination.next_cursor` back as `cursor` until `has_more` is false; the newest edits are on the last page.
 
 ## Access checks
 
@@ -54,7 +54,7 @@ where n.nspname = 'public' and con.contype = 'c';
 
 ## Writing rows
 
-Before an INSERT or UPDATE, read `is_nullable`, `column_default` and `udt_name` for the target columns from `information_schema.columns`, plus the allowed values. Omit a NOT NULL column or use its default rather than passing NULL. A statement succeeds or fails as a whole. Rows written through this plugin are not tied to a signed-in user, so audit columns such as `changed_by` show "unknown" unless you set them; say so.
+Before an INSERT or UPDATE, read `is_nullable`, `column_default` and `udt_name` for the target columns from `information_schema.columns`, plus the allowed values. Omit a NOT NULL column or use its default rather than passing NULL. A statement succeeds or fails as a whole. Rows written through this plugin have no signed-in author, so set audit columns such as `changed_by` when the table has them, and tell the person how the rows will be attributed.
 
 ## When a query does not answer
 

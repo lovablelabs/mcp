@@ -7,6 +7,8 @@ Shorter, plainer skills after a product and engineering review.
 - The shared rules are rewritten in plain language and are about half as long. Database queries, file locations and server details moved to `references/lovable.md` in each skill, which Claude reads only when a step needs it. Each skill file went from about 22 KB to about 12 KB.
 - Steps are no longer labelled free. A step uses no credits only when it calls reading tools alone; steps that send work to Lovable's agent keep their "credits, yes first" label.
 - Wording about the Lovable server is neutral throughout the skills, `CONNECTORS.md` and this changelog.
+- `references/lovable.md` lines now say what to do: read `list_projects` from `projects`, `list_edits` is ordered oldest to newest, and set audit columns such as `changed_by` and tell the person how rows will be attributed. The audit-column wording matches `CONNECTORS.md`.
+- Directory listing: `displayName`, `privacyPolicyUrl` and a square icon in `.claude-plugin/`, and a README section on what the plugin runs and sends.
 
 ## 0.4.1
 
