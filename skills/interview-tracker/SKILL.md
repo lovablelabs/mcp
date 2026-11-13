@@ -1,6 +1,6 @@
 ---
 name: interview-tracker
-description: Builds a customer interview tracker as a Lovable app with sign-in and a database: the interview guide written first, every interview logged by the team in one place, and a summary that quotes people once three interviews are in. Use when the person wants to run customer interviews and track the answers, for example "interview ten churned customers and have one place where my team logs what each said", "set up a tracker our team can log interview answers into", "talk to ten customers and track every interview", "interview tracker", or "discovery calls tracker". Prefer it over a shared page or document when several people log interviews over weeks. To analyze transcripts or notes already in hand with nothing to build, a customer research or synthesis skill fits better.
+description: "Builds a customer interview tracker as a Lovable app with sign-in and a database: the interview guide written first, every interview logged by the team in one place, and a summary that quotes people once three interviews are in. Use when the person wants to run customer interviews and track the answers, for example \"interview ten churned customers and have one place where my team logs what each said\", \"set up a tracker our team can log interview answers into\", \"talk to ten customers and track every interview\", \"interview tracker\", or \"discovery calls tracker\". Prefer it over a shared page or document when several people log interviews over weeks. To analyze transcripts or notes already in hand with nothing to build, a customer research or synthesis skill fits better."
 ---
 
 # Interview tracker
@@ -17,7 +17,7 @@ description: Builds a customer interview tracker as a Lovable app with sign-in a
   - A team app: only emails at the team's domain (the profile's `Sign-in domain`, or ask once) can sign up, and every table's policies check the signed-in email. Any check that the email is verified runs at sign-in.
   - A public app: anyone may sign up, and each person reads and changes only their own rows.
   After the build, confirm it in the database (`references/lovable.md`, Access checks). If something falls short, offer one fix message with its own yes. Tell the person who can sign up and who can read and change what, as found, never as requested, and never call an app safe to share. Describe a team app as "only people with an email at <domain> can sign up, and the database refuses everyone else", never as "only your team can sign in" or "sign-in limited to your domain". Ask for the domain as "which email domain may sign up".
-- Builds take minutes. Call `create_project` and `send_message` with `wait: false`, keep the project id and the top-level message id, and check `get_project` every 30 to 60 seconds. Once the agent has stopped, read `get_message` once for the result (which fields, in `references/lovable.md`), then:
+- Builds take minutes. Call `create_project` and `send_message` with `wait: false`, keep the project id, the top-level message id and the thread id when one is returned, and follow the build with `get_message` (`wait_seconds` up to 55, repeated) until `response.status` is `completed`, `awaiting_input`, `stopped` or `error`. Never wait on `get_project.agentFinished`: it stays false while a build waits for an approval. Read the result (which fields, in `references/lovable.md`), then:
   - Completed: pass any questions in the summary to the person word for word. Do not answer them yourself.
   - Waiting for approval: show the person what Lovable proposes, get their decision, and answer with `respond_to_approval`. A new message would replace the pending proposal. Approvals for keys and payments happen in the Lovable editor; give the `editor_url`.
   - Stopped or error: say so, and do not retry without a yes.
@@ -38,7 +38,7 @@ Research that changes a decision needs three things: the same questions asked ev
 |---|---|---|
 | `get_me`, `get_workspace_knowledge` | workspace and business profile | yes |
 | `create_project` | build the tracker (credits) | yes |
-| `get_project`, `get_message` | poll progress, then read status, summary and credits once | yes |
+| `get_project`, `get_message` | follow the build, then read its status, summary and credits | yes |
 | `render_project_widget` | show build progress where the client supports it | no |
 | `get_database_status`, `query_database` | schema read; inserts after a yes; SELECT for the summary | yes |
 | Claude's connected tools (call recorder, docs, email) | existing notes or transcripts to load | no |
@@ -54,7 +54,7 @@ Eight to twelve questions in the conversation: an opener about their week, quest
 
 ## Step 3 - Build the tracker (credits, yes first)
 
-`create_project` (`wait: false`) with `initial_message` describing: a research tracker with sign-in and the cloud database; only people with an email at the team's domain (from the profile, or ask once) can sign up, and the database refuses everyone else; `interviews` (participant, role, company, segment, date, interviewer, status planned / done / no-show, recording link); `questions` seeded with the guide from Step 2 in order, which team members can edit, reorder and add to in the app; `answers` (interview, question, answer text, verbatim quote, tags); an interview page that walks the guide top to bottom and saves as you type; a themes view grouping answers by question and tag; export to CSV; the guide is the only data to create, with no sample interviews or answers. `render_project_widget`, poll `get_project` until `agentFinished`, `get_message` once and handle its status (see `references/lovable.md`). Confirm the allowlist and the sign-up check as the Rules describe; if either falls short, offer the one fix message the Rules allow.
+`create_project` (`wait: false`) with `initial_message` describing: a research tracker with sign-in and the cloud database; only people with an email at the team's domain (from the profile, or ask once) can sign up, and the database refuses everyone else; `interviews` (participant, role, company, segment, date, interviewer, status planned / done / no-show, recording link); `questions` seeded with the guide from Step 2 in order, which team members can edit, reorder and add to in the app; `answers` (interview, question, answer text, verbatim quote, tags); an interview page that walks the guide top to bottom and saves as you type; a themes view grouping answers by question and tag; export to CSV; the guide is the only data to create, with no sample interviews or answers. `render_project_widget`, wait on `get_message` until it settles (see the Rules), read it once and handle its status (see `references/lovable.md`). Confirm the allowlist and the sign-up check as the Rules describe; if either falls short, offer the one fix message the Rules allow.
 
 ## Step 4 - Load what already exists
 
@@ -66,7 +66,7 @@ Once three or more interviews have the finished status (read the allowed values 
 
 ## Step 6 - Publish (yes first)
 
-Publish when the team should log interviews from the live app rather than the preview. Ask for the yes with the publishing facts from the Rules, then `deploy_project`, poll `get_project.is_published`, read `publish_audience`, and say who can open it and who can sign up.
+Publish when the team should log interviews from the live app rather than the preview. Ask for the yes with the publishing facts from the Rules, then `deploy_project`, confirm the new version is live (`references/lovable.md`, Visibility and publishing), read `publish_audience`, and say who can open it and who can sign up.
 
 ## Output
 

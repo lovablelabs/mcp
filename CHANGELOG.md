@@ -7,7 +7,8 @@ Shorter, plainer skills after a product and engineering review.
 - The shared rules are rewritten in plain language and are about half as long. Database queries, file locations and server details moved to `references/lovable.md` in each skill, which Claude reads only when a step needs it. Each skill file went from about 22 KB to about 12 KB.
 - Steps are no longer labelled free. A step uses no credits only when it calls reading tools alone; steps that send work to Lovable's agent keep their "credits, yes first" label.
 - Wording about the Lovable server is neutral throughout the skills, `CONNECTORS.md` and this changelog.
-- `references/lovable.md` lines now say what to do: read `list_projects` from `projects`, `list_edits` is ordered oldest to newest, and set audit columns such as `changed_by` and tell the person how rows will be attributed. The audit-column wording matches `CONNECTORS.md`.
+- `references/lovable.md` lines now say what to do: read `list_projects` from `projects`, read recent changes from the first page of `list_edits`, and set audit columns such as `changed_by` and tell the person how rows will be attributed. The audit-column wording matches `CONNECTORS.md`.
+- Review fixes: skill descriptions are written as quoted YAML strings, so frontmatter with a colon parses. Builds are followed on `get_message` until it returns `completed`, `awaiting_input`, `stopped` or `error`, because `get_project.agentFinished` stays false while a plan waits for approval. After a publish, the skills check the new version at the URL instead of trusting `is_published`, which is already true on a site published before, and say "in progress" when they cannot check. Recent edits come from the first page of `list_edits`, which holds the newest edits.
 - Directory listing: `displayName`, `privacyPolicyUrl` and a square icon in `.claude-plugin/`, and a README section on what the plugin runs and sends.
 
 ## 0.4.1

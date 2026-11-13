@@ -1,6 +1,6 @@
 ---
 name: review-my-workspace
-description: Reviews every project in a Lovable workspace for exposed secrets, tables without row-level security, open sign-up on personal data and unintended public access, and returns a ranked table for a human to act on. Read-only. Use when the person says "review my workspace", "check my Lovable projects", "exposed keys", "missing RLS", "who can see my apps", "audit my apps", or "which projects need attention". For a review of code in a local repository, a code or security review skill fits better.
+description: "Reviews every project in a Lovable workspace for exposed secrets, tables without row-level security, open sign-up on personal data and unintended public access, and returns a ranked table for a human to act on. Read-only. Use when the person says \"review my workspace\", \"check my Lovable projects\", \"exposed keys\", \"missing RLS\", \"who can see my apps\", \"audit my apps\", or \"which projects need attention\". For a review of code in a local repository, a code or security review skill fits better."
 ---
 
 # Review my workspace
@@ -17,7 +17,7 @@ description: Reviews every project in a Lovable workspace for exposed secrets, t
   - A team app: only emails at the team's domain (the profile's `Sign-in domain`, or ask once) can sign up, and every table's policies check the signed-in email. Any check that the email is verified runs at sign-in.
   - A public app: anyone may sign up, and each person reads and changes only their own rows.
   After the build, confirm it in the database (`references/lovable.md`, Access checks). If something falls short, offer one fix message with its own yes. Tell the person who can sign up and who can read and change what, as found, never as requested, and never call an app safe to share. Describe a team app as "only people with an email at <domain> can sign up, and the database refuses everyone else", never as "only your team can sign in" or "sign-in limited to your domain". Ask for the domain as "which email domain may sign up".
-- Builds take minutes. Call `create_project` and `send_message` with `wait: false`, keep the project id and the top-level message id, and check `get_project` every 30 to 60 seconds. Once the agent has stopped, read `get_message` once for the result (which fields, in `references/lovable.md`), then:
+- Builds take minutes. Call `create_project` and `send_message` with `wait: false`, keep the project id, the top-level message id and the thread id when one is returned, and follow the build with `get_message` (`wait_seconds` up to 55, repeated) until `response.status` is `completed`, `awaiting_input`, `stopped` or `error`. Never wait on `get_project.agentFinished`: it stays false while a build waits for an approval. Read the result (which fields, in `references/lovable.md`), then:
   - Completed: pass any questions in the summary to the person word for word. Do not answer them yourself.
   - Waiting for approval: show the person what Lovable proposes, get their decision, and answer with `respond_to_approval`. A new message would replace the pending proposal. Approvals for keys and payments happen in the Lovable editor; give the `editor_url`.
   - Stopped or error: say so, and do not retry without a yes.
@@ -53,7 +53,7 @@ For each project, in this order:
 1. `get_project`: published or not, visibility, `latest_commit_sha`.
 2. `list_files` at that sha (100 per page; follow `cursor`). Read `.lovable/project.json` to learn the stack, then pick the files worth reading: `lovable.toml`, `src/integrations/supabase/client.ts`, `supabase/functions/**` and `supabase/config.toml` on the older stack, `src/integrations/auth/**`, `src/lib/**` and `drizzle/migrations/*.sql` on the TanStack stack, plus any file whose name contains `key`, `secret`, `token` or `config`. `.env` is usually present; try it, and if the harness refuses the read, record "not readable here" rather than skipping silently.
 3. `read_file` on those. Scan for: `sk_live`, `sk_test`, `service_role`, `-----BEGIN`, `AKIA`, `ghp_`, `xoxb-`, and any JWT beyond the Supabase anon key. The anon key in the client is expected and is not a finding; say so once. Also read `publish_audience` from `get_project` (present only on published projects): `public` with user data behind no sign-in is a finding. Read secret-looking files in their own `read_file` calls, apart from ordinary ones (see `references/lovable.md`).
-4. `list_edits`, following `pagination.next_cursor` to the last page (it returns oldest first), for the last change date.
+4. The first page of `list_edits` (the newest edits), for the last change date: the latest `created_at` on it.
 
 ## Step 3 - Database
 

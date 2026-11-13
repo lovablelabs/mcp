@@ -1,6 +1,6 @@
 ---
 name: ask-my-app-data
-description: Answers questions from a Lovable app's live database in plain language, with the SQL shown: signups this week, revenue by plan, the numbers for an investor update. Read-only. Use when the person asks "how many signed up", "what's in my app's data", "weekly numbers", "investor update numbers", "query my Lovable app", or any question a table in one of their Lovable apps can answer. For data in a warehouse, a spreadsheet or another tool, a data skill fits better.
+description: "Answers questions from a Lovable app's live database in plain language, with the SQL shown: signups this week, revenue by plan, the numbers for an investor update. Read-only. Use when the person asks \"how many signed up\", \"what's in my app's data\", \"weekly numbers\", \"investor update numbers\", \"query my Lovable app\", or any question a table in one of their Lovable apps can answer. For data in a warehouse, a spreadsheet or another tool, a data skill fits better."
 ---
 
 # Ask my app data
@@ -17,7 +17,7 @@ description: Answers questions from a Lovable app's live database in plain langu
   - A team app: only emails at the team's domain (the profile's `Sign-in domain`, or ask once) can sign up, and every table's policies check the signed-in email. Any check that the email is verified runs at sign-in.
   - A public app: anyone may sign up, and each person reads and changes only their own rows.
   After the build, confirm it in the database (`references/lovable.md`, Access checks). If something falls short, offer one fix message with its own yes. Tell the person who can sign up and who can read and change what, as found, never as requested, and never call an app safe to share. Describe a team app as "only people with an email at <domain> can sign up, and the database refuses everyone else", never as "only your team can sign in" or "sign-in limited to your domain". Ask for the domain as "which email domain may sign up".
-- Builds take minutes. Call `create_project` and `send_message` with `wait: false`, keep the project id and the top-level message id, and check `get_project` every 30 to 60 seconds. Once the agent has stopped, read `get_message` once for the result (which fields, in `references/lovable.md`), then:
+- Builds take minutes. Call `create_project` and `send_message` with `wait: false`, keep the project id, the top-level message id and the thread id when one is returned, and follow the build with `get_message` (`wait_seconds` up to 55, repeated) until `response.status` is `completed`, `awaiting_input`, `stopped` or `error`. Never wait on `get_project.agentFinished`: it stays false while a build waits for an approval. Read the result (which fields, in `references/lovable.md`), then:
   - Completed: pass any questions in the summary to the person word for word. Do not answer them yourself.
   - Waiting for approval: show the person what Lovable proposes, get their decision, and answer with `respond_to_approval`. A new message would replace the pending proposal. Approvals for keys and payments happen in the Lovable editor; give the `editor_url`.
   - Stopped or error: say so, and do not retry without a yes.

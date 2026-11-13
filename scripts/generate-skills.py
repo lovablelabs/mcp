@@ -1,4 +1,4 @@
-import os, textwrap
+import json, os, textwrap
 ROOT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "skills")
 
 RULES = """**Rules (apply to every step of this skill):**
@@ -13,7 +13,7 @@ RULES = """**Rules (apply to every step of this skill):**
   - A team app: only emails at the team's domain (the profile's `Sign-in domain`, or ask once) can sign up, and every table's policies check the signed-in email. Any check that the email is verified runs at sign-in.
   - A public app: anyone may sign up, and each person reads and changes only their own rows.
   After the build, confirm it in the database (`references/lovable.md`, Access checks). If something falls short, offer one fix message with its own yes. Tell the person who can sign up and who can read and change what, as found, never as requested, and never call an app safe to share. Describe a team app as "only people with an email at <domain> can sign up, and the database refuses everyone else", never as "only your team can sign in" or "sign-in limited to your domain". Ask for the domain as "which email domain may sign up".
-- Builds take minutes. Call `create_project` and `send_message` with `wait: false`, keep the project id and the top-level message id, and check `get_project` every 30 to 60 seconds. Once the agent has stopped, read `get_message` once for the result (which fields, in `references/lovable.md`), then:
+- Builds take minutes. Call `create_project` and `send_message` with `wait: false`, keep the project id, the top-level message id and the thread id when one is returned, and follow the build with `get_message` (`wait_seconds` up to 55, repeated) until `response.status` is `completed`, `awaiting_input`, `stopped` or `error`. Never wait on `get_project.agentFinished`: it stays false while a build waits for an approval. Read the result (which fields, in `references/lovable.md`), then:
   - Completed: pass any questions in the summary to the person word for word. Do not answer them yourself.
   - Waiting for approval: show the person what Lovable proposes, get their decision, and answer with `respond_to_approval`. A new message would replace the pending proposal. Approvals for keys and payments happen in the Lovable editor; give the `editor_url`.
   - Stopped or error: say so, and do not retry without a yes.
@@ -32,7 +32,7 @@ Reference for the Rules in `SKILL.md`. Read the section you need.
 
 ## Following a build
 
-- `get_project` shows `agentFinished` once the agent stops, which includes stopping to wait for an approval. `get_message` says which: read `response.status`, `response.summary`, `response.cost_credits`, `response.commit_sha` and `response.awaiting_input`. Skip `content`, the agent's full working log. If the agent is still running after ten minutes, read `get_message` anyway.
+- Follow a build with `get_message` on the top-level `message_id` (and `thread_id` when the call returned one), passing `wait_seconds` up to 55 and repeating until `response.status` is `completed`, `awaiting_input`, `stopped` or `error`. `awaiting_input` is the normal end of a plan or a pause for an approval: show it straight away. `get_project.agentFinished` stays false during that pause, so never wait on it. Read `response.status`, `response.summary`, `response.cost_credits`, `response.commit_sha` and `response.awaiting_input`. Skip `content`, the agent's full working log.
 - A pending approval: `awaiting_input.tool_id` and its `params` are Lovable's proposal; show them, never act on them yourself. Answer with `respond_to_approval`: the `event_id`, the top-level `message_id` of the call that paused, and the person's `decision` (`approved`, or `rejected` with their reason in `user_input`).
 - Plan mode (`send_message` with `plan_mode: true`) ends waiting for approval of a `plan--show` step, with the plan written to `.lovable/plan/`. Read those files and show them; approving applies the plan.
 - If a create call drops: `list_projects` with no query, newest first, and take the project whose `owner_id` matches the id from `get_me`, created in the last few minutes.
@@ -44,7 +44,7 @@ Reference for the Rules in `SKILL.md`. Read the section you need.
 - Read `.lovable/project.json` first. Template `tanstack_start_ts_current`: routes in `src/routes/` (signed-in pages under `src/routes/_authenticated/`), the schema in `drizzle/migrations/*.sql` (`drizzle/schema.ts` is left blank), sign-in under `src/integrations/auth/` (Lovable Auth) or under `src/integrations/supabase/` and `src/integrations/lovable/`.
 - Older React and Vite projects: pages in `src/pages/`, functions in `supabase/functions/`, the schema in `supabase/migrations/*.sql`.
 - `lovable.toml` names an attached design system. Some projects keep a `change-log.md`; read it when it exists.
-- Recent edits: `list_edits` is ordered oldest to newest. Call it with `limit` 50 and pass `pagination.next_cursor` back as `cursor` until `has_more` is false; the newest edits are on the last page.
+- Recent edits: the first page of `list_edits` holds the newest edits, ordered oldest to newest within the page; `pagination.next_cursor` goes further back in history. For recent changes or the last activity date, read the first page with `limit` 50 and sort by `created_at`. Follow `next_cursor` only to reach older edits.
 
 ## Access checks
 
@@ -91,7 +91,7 @@ A database nobody has opened lately can take a moment to wake. If `query_databas
 ## Visibility and publishing
 
 - Project visibility: `workspace_edit` lets every workspace member edit; `workspace_view` and `restricted` need a Business plan or higher. Read `visibility` from the create response.
-- `deploy_project` returns `pending`; check `get_project` until `is_published` is true. A published project has `publish_audience`: `public`, `workspace` or `custom`. Enterprise workspaces may publish to the workspace by default.
+- `deploy_project` starts a deployment. It returns `pending`, a `deployment_id` and the intended URL, and none of them confirm the new version is live. `get_project.is_published` does not confirm it either: on a site published before, it is already true. After a deploy, open the URL with a fetch or browser tool when one is available and check that the new content is there. If you cannot confirm it, for example because the audience is `workspace` and the page needs sign-in, say publishing was requested and is in progress, give the URL and the `editor_url`, and ask the person to check. A published project has `publish_audience`: `public`, `workspace` or `custom`. Enterprise workspaces may publish to the workspace by default.
 """
 
 ADAPT_HEADER = "## Spend map (guidance for Claude; never show these labels to the person)"
@@ -102,7 +102,7 @@ NEXT = {'know-my-business': 'With no app yet: `find-what-to-build`, or `build-fr
 
 def skill(name, description, intro, tools, body, tiers):
     description = DESC.get(name, description)
-    fm = f"---\nname: {name}\ndescription: {description}\n---\n"
+    fm = f"---\nname: {name}\ndescription: {json.dumps(description, ensure_ascii=False)}\n---\n"
     title = name.replace("-", " ").capitalize()
     t = "| Tool | Used for | Required? |\n|---|---|---|\n" + "\n".join(f"| {a} | {b} | {c} |" for a,b,c in tools)
     tiers_block = "```\ntiers:\n" + "\n".join(f"  {k:16}{v}" for k,v in tiers) + "\n```"
@@ -121,7 +121,7 @@ skill("launch",
  ("`list_projects`", "find the existing site when the launch lives on one", "no"),
  ("`get_project`, `list_files`, `read_file`", "existing site's routes, nav and one page for voice", "no (existing site only)"),
  ("`create_project` or `send_message`", "build the launch page and changelog (credits)", "one of them"),
- ("`get_project`, `get_message`", "poll progress, then read status, summary and credits once", "yes"),
+ ("`get_project`, `get_message`", "follow the build, then read its status, summary and credits", "yes"),
  ("`render_project_widget`", "show build progress where the client supports it", "no"),
  ("`deploy_project`", "publish", "after a yes")],
 """## Step 1 - Ground
@@ -143,7 +143,7 @@ Voice comes from the workspace profile when it exists, otherwise from the existi
 
 - New site: `create_project` (`wait: false`) with `initial_message` = the launch page at the homepage or `/launch/<slug>`, a `/changelog` page holding the entry (and the blog or news post where the site has that section), nav links to both, the copy verbatim, mobile first, no placeholder text, no stock imagery, and the call to action linking where Step 1 said. Then `render_project_widget`.
 - Existing site: `send_message` (`wait: false`) with the same content plus "add these pages and nav links; do not redesign existing pages".
-Poll `get_project` until `agentFinished`, then `get_message` once for the summary and credits. Handle its status per the Rules.
+Wait on `get_message` until it settles (see the Rules), then read it once for the summary and credits. Handle its status per the Rules.
 
 ## Step 5 - Check
 
@@ -151,7 +151,7 @@ Poll `get_project` until `agentFinished`, then `get_message` once for the summar
 
 ## Step 6 - Publish (yes first)
 
-Ask for the yes with the publishing facts from the Rules in front of the person: on an existing site every unpublished edit goes live with the launch page, and it goes live now; there is no scheduling. For a launch dated later, ask whether to publish now or on the day. On the day, the person publishes from the editor's Publish menu or runs this step again. Then `deploy_project`, poll `get_project.is_published`, read `publish_audience`; a launch page must be `public`, so if it comes back `workspace` say the audience is changed in the editor's Publish menu. Return the live URL. If the person wants a custom domain, that is done in the Lovable editor; say so with the `editor_url`.
+Ask for the yes with the publishing facts from the Rules in front of the person: on an existing site every unpublished edit goes live with the launch page, and it goes live now; there is no scheduling. For a launch dated later, ask whether to publish now or on the day. On the day, the person publishes from the editor's Publish menu or runs this step again. Then `deploy_project`, confirm the new version is live (`references/lovable.md`, Visibility and publishing), read `publish_audience`; a launch page must be `public`, so if it comes back `workspace` say the audience is changed in the editor's Publish menu. Return the live URL once the launch page shows there; until then, say publishing is in progress. If the person wants a custom domain, that is done in the Lovable editor; say so with the `editor_url`.
 
 ## Step 7 - Posts
 
@@ -171,7 +171,7 @@ skill("first-customers",
 [("`get_me`, `get_workspace_knowledge`", "workspace and business profile", "yes"),
  ("Claude's connected tools (enrichment, CRM, web search)", "candidate companies and the exclusion list", "no (the CRM still gets built; the list is shorter)"),
  ("`create_project`", "build the CRM (credits)", "yes"),
- ("`get_project`, `get_message`", "poll progress, then read status, summary and credits once", "yes"),
+ ("`get_project`, `get_message`", "follow the build, then read its status, summary and credits", "yes"),
  ("`render_project_widget`", "show build progress where the client supports it", "no"),
  ("`get_database_status`, `query_database`", "read the real schema, then insert rows after a yes", "yes"),
  ("`deploy_project`", "publish", "after a yes")],
@@ -189,7 +189,7 @@ Build a table: company, domain, size, location, why it fits (which traits), sour
 
 ## Step 3 - Build the CRM (credits, yes first)
 
-If the person already has a CRM this skill built, skip this step and load the new batch into it. Otherwise `create_project` (`wait: false`) with `initial_message` describing: a CRM for a small team with sign-in and the cloud database; only people with an email at the team's domain (from the profile, or ask once) can sign up, and the database refuses everyone else; `companies` (name, domain, size, industry, location, fit_score, fit_reason, source, status with values new / contacted / replied / meeting / won / lost, owner, notes); `contacts` linked to a company (name, title, email, linkedin); `activities` linked to a company (date, type, note); a list view with filters, a kanban by status, a company page showing contacts and activities, CSV import and export, no sample data. Then `render_project_widget`. Poll `get_project` until `agentFinished`, `get_message` once and handle its status (see `references/lovable.md`). Confirm the allowlist in `pg_policies` (see `references/lovable.md`).
+If the person already has a CRM this skill built, skip this step and load the new batch into it. Otherwise `create_project` (`wait: false`) with `initial_message` describing: a CRM for a small team with sign-in and the cloud database; only people with an email at the team's domain (from the profile, or ask once) can sign up, and the database refuses everyone else; `companies` (name, domain, size, industry, location, fit_score, fit_reason, source, status with values new / contacted / replied / meeting / won / lost, owner, notes); `contacts` linked to a company (name, title, email, linkedin); `activities` linked to a company (date, type, note); a list view with filters, a kanban by status, a company page showing contacts and activities, CSV import and export, no sample data. Then `render_project_widget`. Wait on `get_message` until it settles (see the Rules), read it once and handle its status (see `references/lovable.md`). Confirm the allowlist in `pg_policies` (see `references/lovable.md`).
 
 ## Step 4 - Load the list
 
@@ -197,7 +197,7 @@ If the person already has a CRM this skill built, skip this step and load the ne
 
 ## Step 5 - Publish (yes first)
 
-Ask for the yes with the publishing facts from the Rules, then `deploy_project`, poll `get_project` until `is_published`, read `publish_audience`. Tell the person who can open the URL and who can sign up (the allowlist from Step 3). Never call it safe to share.
+Ask for the yes with the publishing facts from the Rules, then `deploy_project`, confirm the new version is live (`references/lovable.md`, Visibility and publishing), read `publish_audience`. Tell the person who can open the URL and who can sign up (the allowlist from Step 3). Never call it safe to share.
 
 ## Output
 
@@ -212,7 +212,7 @@ skill("interview-tracker",
 """Research that changes a decision needs three things: the same questions asked every time, the answers kept where they can be compared, and a summary that quotes people rather than paraphrasing them. The guide is written here. The tracker lives on Lovable. The summary is only written from rows that exist.""",
 [("`get_me`, `get_workspace_knowledge`", "workspace and business profile", "yes"),
  ("`create_project`", "build the tracker (credits)", "yes"),
- ("`get_project`, `get_message`", "poll progress, then read status, summary and credits once", "yes"),
+ ("`get_project`, `get_message`", "follow the build, then read its status, summary and credits", "yes"),
  ("`render_project_widget`", "show build progress where the client supports it", "no"),
  ("`get_database_status`, `query_database`", "schema read; inserts after a yes; SELECT for the summary", "yes"),
  ("Claude's connected tools (call recorder, docs, email)", "existing notes or transcripts to load", "no"),
@@ -227,7 +227,7 @@ Eight to twelve questions in the conversation: an opener about their week, quest
 
 ## Step 3 - Build the tracker (credits, yes first)
 
-`create_project` (`wait: false`) with `initial_message` describing: a research tracker with sign-in and the cloud database; only people with an email at the team's domain (from the profile, or ask once) can sign up, and the database refuses everyone else; `interviews` (participant, role, company, segment, date, interviewer, status planned / done / no-show, recording link); `questions` seeded with the guide from Step 2 in order, which team members can edit, reorder and add to in the app; `answers` (interview, question, answer text, verbatim quote, tags); an interview page that walks the guide top to bottom and saves as you type; a themes view grouping answers by question and tag; export to CSV; the guide is the only data to create, with no sample interviews or answers. `render_project_widget`, poll `get_project` until `agentFinished`, `get_message` once and handle its status (see `references/lovable.md`). Confirm the allowlist and the sign-up check as the Rules describe; if either falls short, offer the one fix message the Rules allow.
+`create_project` (`wait: false`) with `initial_message` describing: a research tracker with sign-in and the cloud database; only people with an email at the team's domain (from the profile, or ask once) can sign up, and the database refuses everyone else; `interviews` (participant, role, company, segment, date, interviewer, status planned / done / no-show, recording link); `questions` seeded with the guide from Step 2 in order, which team members can edit, reorder and add to in the app; `answers` (interview, question, answer text, verbatim quote, tags); an interview page that walks the guide top to bottom and saves as you type; a themes view grouping answers by question and tag; export to CSV; the guide is the only data to create, with no sample interviews or answers. `render_project_widget`, wait on `get_message` until it settles (see the Rules), read it once and handle its status (see `references/lovable.md`). Confirm the allowlist and the sign-up check as the Rules describe; if either falls short, offer the one fix message the Rules allow.
 
 ## Step 4 - Load what already exists
 
@@ -239,7 +239,7 @@ Once three or more interviews have the finished status (read the allowed values 
 
 ## Step 6 - Publish (yes first)
 
-Publish when the team should log interviews from the live app rather than the preview. Ask for the yes with the publishing facts from the Rules, then `deploy_project`, poll `get_project.is_published`, read `publish_audience`, and say who can open it and who can sign up.
+Publish when the team should log interviews from the live app rather than the preview. Ask for the yes with the publishing facts from the Rules, then `deploy_project`, confirm the new version is live (`references/lovable.md`, Visibility and publishing), read `publish_audience`, and say who can open it and who can sign up.
 
 ## Output
 
@@ -254,7 +254,7 @@ skill("hiring-tracker",
 """Candidate data is personal data. Sign-in alone would let anyone with an account in, so the tracker limits sign-up to the team's email domain, requires sign-in on every page, and keeps its data in the person's own database. Publishing the URL to the workspace only is one more setting in the Lovable editor, and the skill points at it. The scorecard is agreed before the app exists, because the app is only as good as the four to six things it measures.""",
 [("`get_me`, `get_workspace_knowledge`", "workspace and business profile", "yes"),
  ("`create_project`", "build the tracker (credits)", "yes"),
- ("`get_project`, `get_message`", "poll progress, then read status, summary and credits once", "yes"),
+ ("`get_project`, `get_message`", "follow the build, then read its status, summary and credits", "yes"),
  ("`render_project_widget`", "show build progress where the client supports it", "no"),
   ("`query_database`", "confirm the allowlist in `pg_policies`; schema, nullability and allowed values; candidate inserts after a yes", "yes"),
  ("`list_files`, `read_file`", "read the auth setup when the policies do not name the domain", "no"),
@@ -269,7 +269,7 @@ Write it in the conversation: each competency with a one-line definition, a 1 to
 
 ## Step 3 - Build (credits, yes first)
 
-`create_project` (`wait: false`) with `initial_message` describing: a hiring tracker with sign-in required on every page and the cloud database; only people with an email at the team's domain (from the profile, or ask once) can sign up, and the database refuses everyone else; `roles` (title, team, hiring manager, status); `candidates` (name, email, source, role, stage, owner, applied date, notes); `interviews` (candidate, interviewer, date, type, one score per competency, notes, recommendation); a kanban by stage per role; a candidate page showing all scorecards side by side with the average per competency; a stage-change log; export to CSV; no sample data. `render_project_widget`, poll `get_project` until `agentFinished`, then `get_message` once for the summary and credits. Expect four tables with RLS and an append-only `stage_changes` table fed by a trigger, and check what was built rather than assuming it. Confirm the allowlist is enforced in the database (`pg_policies` for the candidate tables) and find the sign-up check, both as the Rules describe. If either is only in the page, missing, or blocks sign-ups, say so and offer one `send_message`, with its own yes, to fix it. Interviewers only need to open the published app (Step 5), not edit the project, so leave `visibility` as it is unless the person asks.
+`create_project` (`wait: false`) with `initial_message` describing: a hiring tracker with sign-in required on every page and the cloud database; only people with an email at the team's domain (from the profile, or ask once) can sign up, and the database refuses everyone else; `roles` (title, team, hiring manager, status); `candidates` (name, email, source, role, stage, owner, applied date, notes); `interviews` (candidate, interviewer, date, type, one score per competency, notes, recommendation); a kanban by stage per role; a candidate page showing all scorecards side by side with the average per competency; a stage-change log; export to CSV; no sample data. `render_project_widget`, wait on `get_message` until it settles (see the Rules), then read it once for the summary and credits. Expect four tables with RLS and an append-only `stage_changes` table fed by a trigger, and check what was built rather than assuming it. Confirm the allowlist is enforced in the database (`pg_policies` for the candidate tables) and find the sign-up check, both as the Rules describe. If either is only in the page, missing, or blocks sign-ups, say so and offer one `send_message`, with its own yes, to fix it. Interviewers only need to open the published app (Step 5), not edit the project, so leave `visibility` as it is unless the person asks.
 
 ## Step 4 - Load a candidate list
 
@@ -277,7 +277,7 @@ Only when one exists in the conversation or an uploaded sheet. Read `column_name
 
 ## Step 5 - Publish (yes first)
 
-Before the yes, say the likely audience as the Rules describe. Candidate records are never public: if the likely audience is public, say that anyone with the link will reach the pages while the database keeps candidate rows to the allowed domain, and recommend setting the audience to the workspace in the editor's Publish menu first. Then ask for the yes with the publishing facts from the Rules. `deploy_project` returns `pending`; poll `get_project.is_published`, then read `publish_audience` and report it. Whether every page asks for sign-in comes from the route gate (`src/routes/_authenticated/` or the older stack's auth wrapper); say what `read_file` showed there, or "not checked". Say which it is, and who can sign up. Changing the audience is the editor's Publish menu, not this plugin; give the `editor_url`.
+Before the yes, say the likely audience as the Rules describe. Candidate records are never public: if the likely audience is public, say that anyone with the link will reach the pages while the database keeps candidate rows to the allowed domain, and recommend setting the audience to the workspace in the editor's Publish menu first. Then ask for the yes with the publishing facts from the Rules. Then `deploy_project`, confirm the new version is live (`references/lovable.md`, Visibility and publishing), then read `publish_audience` and report it. Whether every page asks for sign-in comes from the route gate (`src/routes/_authenticated/` or the older stack's auth wrapper); say what `read_file` showed there, or "not checked". Say which it is, and who can sign up. Changing the audience is the editor's Publish menu, not this plugin; give the `editor_url`.
 
 ## Output
 
@@ -354,7 +354,7 @@ For each project, in this order:
 1. `get_project`: published or not, visibility, `latest_commit_sha`.
 2. `list_files` at that sha (100 per page; follow `cursor`). Read `.lovable/project.json` to learn the stack, then pick the files worth reading: `lovable.toml`, `src/integrations/supabase/client.ts`, `supabase/functions/**` and `supabase/config.toml` on the older stack, `src/integrations/auth/**`, `src/lib/**` and `drizzle/migrations/*.sql` on the TanStack stack, plus any file whose name contains `key`, `secret`, `token` or `config`. `.env` is usually present; try it, and if the harness refuses the read, record "not readable here" rather than skipping silently.
 3. `read_file` on those. Scan for: `sk_live`, `sk_test`, `service_role`, `-----BEGIN`, `AKIA`, `ghp_`, `xoxb-`, and any JWT beyond the Supabase anon key. The anon key in the client is expected and is not a finding; say so once. Also read `publish_audience` from `get_project` (present only on published projects): `public` with user data behind no sign-in is a finding. Read secret-looking files in their own `read_file` calls, apart from ordinary ones (see `references/lovable.md`).
-4. `list_edits`, following `pagination.next_cursor` to the last page (it returns oldest first), for the last change date.
+4. The first page of `list_edits` (the newest edits), for the last change date: the latest `created_at` on it.
 
 ## Step 3 - Database
 
@@ -415,7 +415,7 @@ Resolve the project (`list_projects` by name, confirm). Pin down: what the perso
 
 ## Step 2 - Investigate
 
-- `list_edits` (oldest first; follow `pagination.next_cursor` to the pages around the start date) and find the edits around the start date. `get_diff` on the suspects. Quote the lines.
+- `list_edits` (the first page is the newest; follow `pagination.next_cursor` back to the pages around the start date) and find the edits around the start date. `get_diff` on the suspects. Quote the lines.
 - `read_file` on the files those diffs touched and on the page or function the symptom points at.
 - Cost or storage problems: `query_database` SELECT on `pg_total_relation_size` per table, row counts now versus the app's age, columns storing large text or base64, and edge functions that write on every request. Check storage buckets through the files that reference them.
 - Slowness: unbounded selects, queries in loops, missing indexes (`pg_indexes`), large payloads on first load.
@@ -427,7 +427,7 @@ What will change, why that removes the cause, what it could break, and how to un
 
 ## Step 4 - Plan, then apply (credits, one yes each)
 
-For a one-file change: one `send_message` (`wait: false`) describing the fix, after a yes that quotes its cost (about one credit), names the version to restore from Step 1, and says the result will be "fixed in the code, not tested" until the person tries it; poll and read its status per the Rules, then check the diff as below. For anything bigger: `send_message` with `plan_mode: true` and `wait: false`, describing the fix in plain language and asking which files it would touch, whether the database changes, and what could break. Poll `get_project` until `agentFinished`, then `get_message` once: plan mode ends with `response.status` = `awaiting_input` and a pending `plan--show` approval. That is the normal end of a plan, not a stall. Lovable committed the plan to `.lovable/plan/` (`01-overview.md`, `02-layout.html`, `03-details.md`); `read_file` them and show the person the files, the database change and the risks; a plan costs about one credit. On a yes, call `respond_to_approval` with the `project_id`, `awaiting_input.event_id`, the top-level `message_id` returned by the plan `send_message`, `decision: "approved"` and `wait: false`; that applies the plan. Never apply with a new `send_message`: it rejects the pending plan. On a no, `respond_to_approval` with `decision: "rejected"` and the person's reason in `user_input`. Poll, then `get_diff` with the same `message_id` and check the diff against the plan file by file. A small apply costs about one credit. Anything extra: say so before going on.
+For a one-file change: one `send_message` (`wait: false`) describing the fix, after a yes that quotes its cost (about one credit), names the version to restore from Step 1, and says the result will be "fixed in the code, not tested" until the person tries it; poll and read its status per the Rules, then check the diff as below. For anything bigger: `send_message` with `plan_mode: true` and `wait: false`, describing the fix in plain language and asking which files it would touch, whether the database changes, and what could break. Wait on `get_message` until it settles (see the Rules), then read it once: plan mode ends with `response.status` = `awaiting_input` and a pending `plan--show` approval. That is the normal end of a plan, not a stall. Lovable committed the plan to `.lovable/plan/` (`01-overview.md`, `02-layout.html`, `03-details.md`); `read_file` them and show the person the files, the database change and the risks; a plan costs about one credit. On a yes, call `respond_to_approval` with the `project_id`, `awaiting_input.event_id`, the top-level `message_id` returned by the plan `send_message`, `decision: "approved"` and `wait: false`; that applies the plan. Never apply with a new `send_message`: it rejects the pending plan. On a no, `respond_to_approval` with `decision: "rejected"` and the person's reason in `user_input`. Poll, then `get_diff` with the same `message_id` and check the diff against the plan file by file. A small apply costs about one credit. Anything extra: say so before going on.
 
 ## Step 5 - Verify
 
@@ -435,7 +435,7 @@ For a one-file change: one `send_message` (`wait: false`) describing the fix, af
 
 ## Step 6 - Ship (yes first)
 
-Ask for the yes with the publishing facts from the Rules (every unpublished edit goes live, now). Then `deploy_project`, poll `get_project.is_published`, read `publish_audience`. Return the live URL, who can open it, and the version to restore from the editor's history if needed.
+Ask for the yes with the publishing facts from the Rules (every unpublished edit goes live, now). Then `deploy_project`, confirm the new version is live (`references/lovable.md`, Visibility and publishing), read `publish_audience`. Return the live URL, who can open it, and the version to restore from the editor's history if needed.
 
 ## Output
 
@@ -466,7 +466,7 @@ Ask which shape once if not obvious: brief (one page, for a stakeholder), spec (
 - Data model: tables and key columns as read, relationships, which tables hold personal data.
 - Integrations and sign-in, from the integrations folder and functions.
 - What is not finished: TODOs, placeholder text, empty pages, tables with no reads.
-- Recent changes, from the last page of `list_edits` (it returns oldest first; follow `pagination.next_cursor`).
+- Recent changes, from the first page of `list_edits` (the newest edits), sorted by `created_at`.
 - How to change it: the `editor_url`, and this plugin's `fix-and-ship`.
 Label every inference "inferred". Say "not found" for a section with no evidence.
 
@@ -492,7 +492,7 @@ skill("build-from-this-conversation",
 [("`get_me`, `get_workspace_knowledge`", "workspace, business profile, build defaults", "yes"),
  ("`list_design_systems`", "a workspace design system to start from", "no"),
  ("`create_project`", "the build (credits)", "yes"),
- ("`get_project`, `get_message`", "poll progress, then read status, summary and credits once", "yes"),
+ ("`get_project`, `get_message`", "follow the build, then read its status, summary and credits", "yes"),
  ("`render_project_widget`", "show build progress where the client supports it", "no"),
  ("`list_files`, `read_file`", "verify each promised feature exists", "yes"),
  ("`send_message`", "one follow-up round (credits)", "no"),
@@ -510,7 +510,7 @@ The person confirms or edits. Do not build until they do.
 
 ## Step 2 - Build (credits, yes first)
 
-`get_me`, workspace, `get_workspace_knowledge`. `list_design_systems` is optional; it can return a long list, so ask by name rather than listing them all. `create_project` (`wait: false`) with `initial_message` = the brief in plain language plus "use the cloud database and sign-in as this workspace allows, make every listed feature work end to end, no placeholder data, no lorem ipsum", and the access requirement from the Rules for the users in the brief (team: the email allowlist; public: each person sees only their own rows). Pass `design_systems` if chosen. `render_project_widget`. Poll `get_project` until `agentFinished`, then `get_message` once for `summary` and `cost_credits`. Handle its status per the Rules (questions in a completed summary go to the person word for word). If teammates should edit it too, handle `visibility` per the Rules. Confirm access as the Rules describe for every app with sign-in, and say who can sign up and who can read and change what.
+`get_me`, workspace, `get_workspace_knowledge`. `list_design_systems` is optional; it can return a long list, so ask by name rather than listing them all. `create_project` (`wait: false`) with `initial_message` = the brief in plain language plus "use the cloud database and sign-in as this workspace allows, make every listed feature work end to end, no placeholder data, no lorem ipsum", and the access requirement from the Rules for the users in the brief (team: the email allowlist; public: each person sees only their own rows). Pass `design_systems` if chosen. `render_project_widget`. Wait on `get_message` until it settles (see the Rules), then read it once for `summary` and `cost_credits`. Handle its status per the Rules (questions in a completed summary go to the person word for word). If teammates should edit it too, handle `visibility` per the Rules. Confirm access as the Rules describe for every app with sign-in, and say who can sign up and who can read and change what.
 
 ## Step 3 - Check against the brief
 
@@ -522,7 +522,7 @@ Everything missing or wrong in one `send_message`. Poll. Re-check the items that
 
 ## Step 5 - Publish (yes first)
 
-Ask for the yes with the publishing facts from the Rules, then `deploy_project`, poll `get_project.is_published` and read `publish_audience`.
+Ask for the yes with the publishing facts from the Rules, then `deploy_project`, confirm the new version is live (`references/lovable.md`, Visibility and publishing) and read `publish_audience`.
 
 ## Output
 
@@ -574,7 +574,7 @@ skill("spreadsheet-to-app",
 [("`get_me`, `get_workspace_knowledge`", "workspace and business profile", "yes"),
  ("`get_file_upload_url`", "upload the file when this environment can PUT bytes", "no (fallback below)"),
  ("`create_project`", "the build with the file attached (credits)", "yes"),
- ("`get_project`, `get_message`", "poll progress, then read status, summary and credits once", "yes"),
+ ("`get_project`, `get_message`", "follow the build, then read its status, summary and credits", "yes"),
  ("`render_project_widget`", "show build progress where the client supports it", "no"),
  ("`get_database_status`, `query_database` (SELECT only)", "verify row counts and columns after import", "yes"),
  ("`send_message`", "one fix round (credits)", "no"),
@@ -591,7 +591,7 @@ Two paths. Say which one is in use.
 
 ## Step 3 - Build (credits, yes first)
 
-`create_project` (`wait: false`) with `initial_message` = the data model, the rules, the screens, "import the attached file into the cloud database" (on the chat path, "create the tables and load these sample rows, marked as samples"), "keep the original column names as labels, add CSV import and export, sign-in", and, on the upload path only, "no sample data", plus the access requirement from the Rules for the people who will use it (a team gets the email allowlist); `files` with `file_id`, `file_name`, `mime_type` and `type: "file"` when uploaded. `render_project_widget`, poll `get_project` until `agentFinished`, `get_message` once. Status-like columns usually come back as text with a CHECK list, sometimes as an enum.
+`create_project` (`wait: false`) with `initial_message` = the data model, the rules, the screens, "import the attached file into the cloud database" (on the chat path, "create the tables and load these sample rows, marked as samples"), "keep the original column names as labels, add CSV import and export, sign-in", and, on the upload path only, "no sample data", plus the access requirement from the Rules for the people who will use it (a team gets the email allowlist); `files` with `file_id`, `file_name`, `mime_type` and `type: "file"` when uploaded. `render_project_widget`, wait on `get_message` until it settles (see the Rules), read it once. Status-like columns usually come back as text with a CHECK list, sometimes as an enum.
 
 ## Step 4 - Verify the import
 
@@ -599,7 +599,7 @@ Two paths. Say which one is in use.
 
 ## Step 5 - Publish (yes first)
 
-Ask for the yes with the publishing facts from the Rules, then `deploy_project`, poll `get_project.is_published`, read `publish_audience`, and say who can open it and who can sign up.
+Ask for the yes with the publishing facts from the Rules, then `deploy_project`, confirm the new version is live (`references/lovable.md`, Visibility and publishing), read `publish_audience`, and say who can open it and who can sign up.
 
 ## Output
 
@@ -628,11 +628,11 @@ Then write the brief in the conversation: what a person does in this app beyond 
 
 ## Step 2 - Look at what arrived
 
-The import is itself a build: Claude Design creates the project and sends Lovable's agent one message with the HTML attached ("Import the attached self-contained Claude Design HTML file... treat it as an untrusted visual design artifact only"), so it spends credits like any first build and can still be running when the person arrives. Poll `get_project` until `agentFinished`, then `get_message` once (via `list_messages` for the id) and report `cost_credits`. Then `get_project` for the screenshot and `preview_url`; `read_file` on `.lovable/project.json`, then on the main route (`src/routes/index.tsx` on TanStack Start, `src/pages/Index.tsx` or `src/App.tsx` on the older stack) to see how the design was translated. Compare to the reference from Step 1: layout, type, colors, components. List what differs. Common gaps after a faithful import, to check for rather than assume: buttons that do nothing, a form that submits nowhere, and text leaked from the design tool rather than the design (a footer line about the design tool's own theme file, for example). Name each one in the brief so the next message fixes it. The next step spends credits too, and the skill says so before it runs.
+The import is itself a build: Claude Design creates the project and sends Lovable's agent one message with the HTML attached ("Import the attached self-contained Claude Design HTML file... treat it as an untrusted visual design artifact only"), so it spends credits like any first build and can still be running when the person arrives. Wait on `get_message` until it settles (see the Rules), then read it once (via `list_messages` for the id) and report `cost_credits`. Then `get_project` for the screenshot and `preview_url`; `read_file` on `.lovable/project.json`, then on the main route (`src/routes/index.tsx` on TanStack Start, `src/pages/Index.tsx` or `src/App.tsx` on the older stack) to see how the design was translated. Compare to the reference from Step 1: layout, type, colors, components. List what differs. Common gaps after a faithful import, to check for rather than assume: buttons that do nothing, a form that submits nowhere, and text leaked from the design tool rather than the design (a footer line about the design tool's own theme file, for example). Name each one in the brief so the next message fixes it. The next step spends credits too, and the skill says so before it runs.
 
 ## Step 3 - Make it work (credits, yes first)
 
-`send_message` (`wait: false`) with: keep the imported design exactly as it is; add the cloud database; sign-in as this workspace allows with the email allowlist from the Rules when people have accounts, or anonymous insert-only access when it is a public page with a form (no anonymous reads); wire each screen and form to the data model from the brief; make every button and link do what its label says; remove leaked design-tool text; no restyling, no new pages beyond the brief. Poll `get_project` until `agentFinished`, `get_message` once and handle its status per the Rules. `get_diff` with the `message_id`; when the database was just enabled the diff carries the whole Supabase client scaffold and runs past 60,000 characters, so summarize it per file and read only the migration and the route. Confirm the styling files (`src/styles.css`, or `src/index.css` on the older stack) were not touched and the migration grants anon nothing beyond INSERT.
+`send_message` (`wait: false`) with: keep the imported design exactly as it is; add the cloud database; sign-in as this workspace allows with the email allowlist from the Rules when people have accounts, or anonymous insert-only access when it is a public page with a form (no anonymous reads); wire each screen and form to the data model from the brief; make every button and link do what its label says; remove leaked design-tool text; no restyling, no new pages beyond the brief. Wait on `get_message` until it settles (see the Rules), read it once and handle its status per the Rules. `get_diff` with the `message_id`; when the database was just enabled the diff carries the whole Supabase client scaffold and runs past 60,000 characters, so summarize it per file and read only the migration and the route. Confirm the styling files (`src/styles.css`, or `src/index.css` on the older stack) were not touched and the migration grants anon nothing beyond INSERT.
 
 ## Step 4 - Check and one fix round
 
@@ -640,7 +640,7 @@ The import is itself a build: Claude Design creates the project and sends Lovabl
 
 ## Step 5 - Publish (yes first)
 
-Ask for the yes with the publishing facts from the Rules, then `deploy_project`, poll `get_project.is_published`, read `publish_audience`.
+Ask for the yes with the publishing facts from the Rules, then `deploy_project`, confirm the new version is live (`references/lovable.md`, Visibility and publishing), read `publish_audience`.
 
 ## Output
 

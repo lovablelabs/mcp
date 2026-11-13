@@ -1,6 +1,6 @@
 ---
 name: document-my-app
-description: Writes a brief, spec, README or handover doc for an app built on Lovable, grounded in that project's actual code, schema and change log, and keeps the project knowledge that Lovable's agent reads up to date. Use whenever the person asks for documentation about a Lovable app or project: "write the brief for my Lovable app", "handover doc for my Lovable app", "document this Lovable project", "what does my Lovable app do", "update the project knowledge", or a spec from a Lovable project's code. For docs about code in a local repository or a codebase outside Lovable, a documentation skill fits better.
+description: "Writes a brief, spec, README or handover doc for an app built on Lovable, grounded in that project's actual code, schema and change log, and keeps the project knowledge that Lovable's agent reads up to date. Use whenever the person asks for documentation about a Lovable app or project: \"write the brief for my Lovable app\", \"handover doc for my Lovable app\", \"document this Lovable project\", \"what does my Lovable app do\", \"update the project knowledge\", or a spec from a Lovable project's code. For docs about code in a local repository or a codebase outside Lovable, a documentation skill fits better."
 ---
 
 # Document my app
@@ -17,7 +17,7 @@ description: Writes a brief, spec, README or handover doc for an app built on Lo
   - A team app: only emails at the team's domain (the profile's `Sign-in domain`, or ask once) can sign up, and every table's policies check the signed-in email. Any check that the email is verified runs at sign-in.
   - A public app: anyone may sign up, and each person reads and changes only their own rows.
   After the build, confirm it in the database (`references/lovable.md`, Access checks). If something falls short, offer one fix message with its own yes. Tell the person who can sign up and who can read and change what, as found, never as requested, and never call an app safe to share. Describe a team app as "only people with an email at <domain> can sign up, and the database refuses everyone else", never as "only your team can sign in" or "sign-in limited to your domain". Ask for the domain as "which email domain may sign up".
-- Builds take minutes. Call `create_project` and `send_message` with `wait: false`, keep the project id and the top-level message id, and check `get_project` every 30 to 60 seconds. Once the agent has stopped, read `get_message` once for the result (which fields, in `references/lovable.md`), then:
+- Builds take minutes. Call `create_project` and `send_message` with `wait: false`, keep the project id, the top-level message id and the thread id when one is returned, and follow the build with `get_message` (`wait_seconds` up to 55, repeated) until `response.status` is `completed`, `awaiting_input`, `stopped` or `error`. Never wait on `get_project.agentFinished`: it stays false while a build waits for an approval. Read the result (which fields, in `references/lovable.md`), then:
   - Completed: pass any questions in the summary to the person word for word. Do not answer them yourself.
   - Waiting for approval: show the person what Lovable proposes, get their decision, and answer with `respond_to_approval`. A new message would replace the pending proposal. Approvals for keys and payments happen in the Lovable editor; give the `editor_url`.
   - Stopped or error: say so, and do not retry without a yes.
@@ -55,7 +55,7 @@ Ask which shape once if not obvious: brief (one page, for a stakeholder), spec (
 - Data model: tables and key columns as read, relationships, which tables hold personal data.
 - Integrations and sign-in, from the integrations folder and functions.
 - What is not finished: TODOs, placeholder text, empty pages, tables with no reads.
-- Recent changes, from the last page of `list_edits` (it returns oldest first; follow `pagination.next_cursor`).
+- Recent changes, from the first page of `list_edits` (the newest edits), sorted by `created_at`.
 - How to change it: the `editor_url`, and this plugin's `fix-and-ship`.
 Label every inference "inferred". Say "not found" for a section with no evidence.
 

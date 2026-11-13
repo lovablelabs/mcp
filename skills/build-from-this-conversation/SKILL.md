@@ -1,6 +1,6 @@
 ---
 name: build-from-this-conversation
-description: Turns the idea already worked out in this Claude conversation into a live Lovable app with a database, access the database limits to the right people, and a URL. Use when the person says "make this real", "build this", "turn this into an app", "build what we just discussed", "put this on Lovable", or "ship it" about an idea in the conversation. When the starting point is a spreadsheet or a Claude Design, spreadsheet-to-app or claude-design-to-app fits better.
+description: "Turns the idea already worked out in this Claude conversation into a live Lovable app with a database, access the database limits to the right people, and a URL. Use when the person says \"make this real\", \"build this\", \"turn this into an app\", \"build what we just discussed\", \"put this on Lovable\", or \"ship it\" about an idea in the conversation. When the starting point is a spreadsheet or a Claude Design, spreadsheet-to-app or claude-design-to-app fits better."
 ---
 
 # Build from this conversation
@@ -17,7 +17,7 @@ description: Turns the idea already worked out in this Claude conversation into 
   - A team app: only emails at the team's domain (the profile's `Sign-in domain`, or ask once) can sign up, and every table's policies check the signed-in email. Any check that the email is verified runs at sign-in.
   - A public app: anyone may sign up, and each person reads and changes only their own rows.
   After the build, confirm it in the database (`references/lovable.md`, Access checks). If something falls short, offer one fix message with its own yes. Tell the person who can sign up and who can read and change what, as found, never as requested, and never call an app safe to share. Describe a team app as "only people with an email at <domain> can sign up, and the database refuses everyone else", never as "only your team can sign in" or "sign-in limited to your domain". Ask for the domain as "which email domain may sign up".
-- Builds take minutes. Call `create_project` and `send_message` with `wait: false`, keep the project id and the top-level message id, and check `get_project` every 30 to 60 seconds. Once the agent has stopped, read `get_message` once for the result (which fields, in `references/lovable.md`), then:
+- Builds take minutes. Call `create_project` and `send_message` with `wait: false`, keep the project id, the top-level message id and the thread id when one is returned, and follow the build with `get_message` (`wait_seconds` up to 55, repeated) until `response.status` is `completed`, `awaiting_input`, `stopped` or `error`. Never wait on `get_project.agentFinished`: it stays false while a build waits for an approval. Read the result (which fields, in `references/lovable.md`), then:
   - Completed: pass any questions in the summary to the person word for word. Do not answer them yourself.
   - Waiting for approval: show the person what Lovable proposes, get their decision, and answer with `respond_to_approval`. A new message would replace the pending proposal. Approvals for keys and payments happen in the Lovable editor; give the `editor_url`.
   - Stopped or error: say so, and do not retry without a yes.
@@ -39,7 +39,7 @@ The conversation is the spec. Claude writes the brief from it, the person confir
 | `get_me`, `get_workspace_knowledge` | workspace, business profile, build defaults | yes |
 | `list_design_systems` | a workspace design system to start from | no |
 | `create_project` | the build (credits) | yes |
-| `get_project`, `get_message` | poll progress, then read status, summary and credits once | yes |
+| `get_project`, `get_message` | follow the build, then read its status, summary and credits | yes |
 | `render_project_widget` | show build progress where the client supports it | no |
 | `list_files`, `read_file` | verify each promised feature exists | yes |
 | `send_message` | one follow-up round (credits) | no |
@@ -58,7 +58,7 @@ The person confirms or edits. Do not build until they do.
 
 ## Step 2 - Build (credits, yes first)
 
-`get_me`, workspace, `get_workspace_knowledge`. `list_design_systems` is optional; it can return a long list, so ask by name rather than listing them all. `create_project` (`wait: false`) with `initial_message` = the brief in plain language plus "use the cloud database and sign-in as this workspace allows, make every listed feature work end to end, no placeholder data, no lorem ipsum", and the access requirement from the Rules for the users in the brief (team: the email allowlist; public: each person sees only their own rows). Pass `design_systems` if chosen. `render_project_widget`. Poll `get_project` until `agentFinished`, then `get_message` once for `summary` and `cost_credits`. Handle its status per the Rules (questions in a completed summary go to the person word for word). If teammates should edit it too, handle `visibility` per the Rules. Confirm access as the Rules describe for every app with sign-in, and say who can sign up and who can read and change what.
+`get_me`, workspace, `get_workspace_knowledge`. `list_design_systems` is optional; it can return a long list, so ask by name rather than listing them all. `create_project` (`wait: false`) with `initial_message` = the brief in plain language plus "use the cloud database and sign-in as this workspace allows, make every listed feature work end to end, no placeholder data, no lorem ipsum", and the access requirement from the Rules for the users in the brief (team: the email allowlist; public: each person sees only their own rows). Pass `design_systems` if chosen. `render_project_widget`. Wait on `get_message` until it settles (see the Rules), then read it once for `summary` and `cost_credits`. Handle its status per the Rules (questions in a completed summary go to the person word for word). If teammates should edit it too, handle `visibility` per the Rules. Confirm access as the Rules describe for every app with sign-in, and say who can sign up and who can read and change what.
 
 ## Step 3 - Check against the brief
 
@@ -70,7 +70,7 @@ Everything missing or wrong in one `send_message`. Poll. Re-check the items that
 
 ## Step 5 - Publish (yes first)
 
-Ask for the yes with the publishing facts from the Rules, then `deploy_project`, poll `get_project.is_published` and read `publish_audience`.
+Ask for the yes with the publishing facts from the Rules, then `deploy_project`, confirm the new version is live (`references/lovable.md`, Visibility and publishing) and read `publish_audience`.
 
 ## Output
 

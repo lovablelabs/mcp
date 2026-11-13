@@ -1,6 +1,6 @@
 ---
 name: launch
-description: Builds and publishes a launch page and a dated changelog entry on Lovable, on a new site or the person's existing Lovable site, then drafts three posts pointing at the live page. Use when the person says "we're launching", "launch page", "put the launch on the site", "write the changelog", "ship the launch page", or names a launch date for something they built. Use it when the outcome is a page that goes live. For launch planning, positioning or a go-to-market plan with no page to build, a launch strategy skill fits better.
+description: "Builds and publishes a launch page and a dated changelog entry on Lovable, on a new site or the person's existing Lovable site, then drafts three posts pointing at the live page. Use when the person says \"we're launching\", \"launch page\", \"put the launch on the site\", \"write the changelog\", \"ship the launch page\", or names a launch date for something they built. Use it when the outcome is a page that goes live. For launch planning, positioning or a go-to-market plan with no page to build, a launch strategy skill fits better."
 ---
 
 # Launch
@@ -17,7 +17,7 @@ description: Builds and publishes a launch page and a dated changelog entry on L
   - A team app: only emails at the team's domain (the profile's `Sign-in domain`, or ask once) can sign up, and every table's policies check the signed-in email. Any check that the email is verified runs at sign-in.
   - A public app: anyone may sign up, and each person reads and changes only their own rows.
   After the build, confirm it in the database (`references/lovable.md`, Access checks). If something falls short, offer one fix message with its own yes. Tell the person who can sign up and who can read and change what, as found, never as requested, and never call an app safe to share. Describe a team app as "only people with an email at <domain> can sign up, and the database refuses everyone else", never as "only your team can sign in" or "sign-in limited to your domain". Ask for the domain as "which email domain may sign up".
-- Builds take minutes. Call `create_project` and `send_message` with `wait: false`, keep the project id and the top-level message id, and check `get_project` every 30 to 60 seconds. Once the agent has stopped, read `get_message` once for the result (which fields, in `references/lovable.md`), then:
+- Builds take minutes. Call `create_project` and `send_message` with `wait: false`, keep the project id, the top-level message id and the thread id when one is returned, and follow the build with `get_message` (`wait_seconds` up to 55, repeated) until `response.status` is `completed`, `awaiting_input`, `stopped` or `error`. Never wait on `get_project.agentFinished`: it stays false while a build waits for an approval. Read the result (which fields, in `references/lovable.md`), then:
   - Completed: pass any questions in the summary to the person word for word. Do not answer them yourself.
   - Waiting for approval: show the person what Lovable proposes, get their decision, and answer with `respond_to_approval`. A new message would replace the pending proposal. Approvals for keys and payments happen in the Lovable editor; give the `editor_url`.
   - Stopped or error: say so, and do not retry without a yes.
@@ -40,7 +40,7 @@ A launch is one page people land on, one changelog entry that dates it, and thre
 | `list_projects` | find the existing site when the launch lives on one | no |
 | `get_project`, `list_files`, `read_file` | existing site's routes, nav and one page for voice | no (existing site only) |
 | `create_project` or `send_message` | build the launch page and changelog (credits) | one of them |
-| `get_project`, `get_message` | poll progress, then read status, summary and credits once | yes |
+| `get_project`, `get_message` | follow the build, then read its status, summary and credits | yes |
 | `render_project_widget` | show build progress where the client supports it | no |
 | `deploy_project` | publish | after a yes |
 
@@ -63,7 +63,7 @@ Voice comes from the workspace profile when it exists, otherwise from the existi
 
 - New site: `create_project` (`wait: false`) with `initial_message` = the launch page at the homepage or `/launch/<slug>`, a `/changelog` page holding the entry (and the blog or news post where the site has that section), nav links to both, the copy verbatim, mobile first, no placeholder text, no stock imagery, and the call to action linking where Step 1 said. Then `render_project_widget`.
 - Existing site: `send_message` (`wait: false`) with the same content plus "add these pages and nav links; do not redesign existing pages".
-Poll `get_project` until `agentFinished`, then `get_message` once for the summary and credits. Handle its status per the Rules.
+Wait on `get_message` until it settles (see the Rules), then read it once for the summary and credits. Handle its status per the Rules.
 
 ## Step 5 - Check
 
@@ -71,7 +71,7 @@ Poll `get_project` until `agentFinished`, then `get_message` once for the summar
 
 ## Step 6 - Publish (yes first)
 
-Ask for the yes with the publishing facts from the Rules in front of the person: on an existing site every unpublished edit goes live with the launch page, and it goes live now; there is no scheduling. For a launch dated later, ask whether to publish now or on the day. On the day, the person publishes from the editor's Publish menu or runs this step again. Then `deploy_project`, poll `get_project.is_published`, read `publish_audience`; a launch page must be `public`, so if it comes back `workspace` say the audience is changed in the editor's Publish menu. Return the live URL. If the person wants a custom domain, that is done in the Lovable editor; say so with the `editor_url`.
+Ask for the yes with the publishing facts from the Rules in front of the person: on an existing site every unpublished edit goes live with the launch page, and it goes live now; there is no scheduling. For a launch dated later, ask whether to publish now or on the day. On the day, the person publishes from the editor's Publish menu or runs this step again. Then `deploy_project`, confirm the new version is live (`references/lovable.md`, Visibility and publishing), read `publish_audience`; a launch page must be `public`, so if it comes back `workspace` say the audience is changed in the editor's Publish menu. Return the live URL once the launch page shows there; until then, say publishing is in progress. If the person wants a custom domain, that is done in the Lovable editor; say so with the `editor_url`.
 
 ## Step 7 - Posts
 

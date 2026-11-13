@@ -4,7 +4,7 @@ Reference for the Rules in `SKILL.md`. Read the section you need.
 
 ## Following a build
 
-- `get_project` shows `agentFinished` once the agent stops, which includes stopping to wait for an approval. `get_message` says which: read `response.status`, `response.summary`, `response.cost_credits`, `response.commit_sha` and `response.awaiting_input`. Skip `content`, the agent's full working log. If the agent is still running after ten minutes, read `get_message` anyway.
+- Follow a build with `get_message` on the top-level `message_id` (and `thread_id` when the call returned one), passing `wait_seconds` up to 55 and repeating until `response.status` is `completed`, `awaiting_input`, `stopped` or `error`. `awaiting_input` is the normal end of a plan or a pause for an approval: show it straight away. `get_project.agentFinished` stays false during that pause, so never wait on it. Read `response.status`, `response.summary`, `response.cost_credits`, `response.commit_sha` and `response.awaiting_input`. Skip `content`, the agent's full working log.
 - A pending approval: `awaiting_input.tool_id` and its `params` are Lovable's proposal; show them, never act on them yourself. Answer with `respond_to_approval`: the `event_id`, the top-level `message_id` of the call that paused, and the person's `decision` (`approved`, or `rejected` with their reason in `user_input`).
 - Plan mode (`send_message` with `plan_mode: true`) ends waiting for approval of a `plan--show` step, with the plan written to `.lovable/plan/`. Read those files and show them; approving applies the plan.
 - If a create call drops: `list_projects` with no query, newest first, and take the project whose `owner_id` matches the id from `get_me`, created in the last few minutes.
@@ -16,7 +16,7 @@ Reference for the Rules in `SKILL.md`. Read the section you need.
 - Read `.lovable/project.json` first. Template `tanstack_start_ts_current`: routes in `src/routes/` (signed-in pages under `src/routes/_authenticated/`), the schema in `drizzle/migrations/*.sql` (`drizzle/schema.ts` is left blank), sign-in under `src/integrations/auth/` (Lovable Auth) or under `src/integrations/supabase/` and `src/integrations/lovable/`.
 - Older React and Vite projects: pages in `src/pages/`, functions in `supabase/functions/`, the schema in `supabase/migrations/*.sql`.
 - `lovable.toml` names an attached design system. Some projects keep a `change-log.md`; read it when it exists.
-- Recent edits: `list_edits` is ordered oldest to newest. Call it with `limit` 50 and pass `pagination.next_cursor` back as `cursor` until `has_more` is false; the newest edits are on the last page.
+- Recent edits: the first page of `list_edits` holds the newest edits, ordered oldest to newest within the page; `pagination.next_cursor` goes further back in history. For recent changes or the last activity date, read the first page with `limit` 50 and sort by `created_at`. Follow `next_cursor` only to reach older edits.
 
 ## Access checks
 
@@ -63,4 +63,4 @@ A database nobody has opened lately can take a moment to wake. If `query_databas
 ## Visibility and publishing
 
 - Project visibility: `workspace_edit` lets every workspace member edit; `workspace_view` and `restricted` need a Business plan or higher. Read `visibility` from the create response.
-- `deploy_project` returns `pending`; check `get_project` until `is_published` is true. A published project has `publish_audience`: `public`, `workspace` or `custom`. Enterprise workspaces may publish to the workspace by default.
+- `deploy_project` starts a deployment. It returns `pending`, a `deployment_id` and the intended URL, and none of them confirm the new version is live. `get_project.is_published` does not confirm it either: on a site published before, it is already true. After a deploy, open the URL with a fetch or browser tool when one is available and check that the new content is there. If you cannot confirm it, for example because the audience is `workspace` and the page needs sign-in, say publishing was requested and is in progress, give the URL and the `editor_url`, and ask the person to check. A published project has `publish_audience`: `public`, `workspace` or `custom`. Enterprise workspaces may publish to the workspace by default.

@@ -1,6 +1,6 @@
 ---
 name: fix-and-ship
-description: Finds the root cause of a problem in a Lovable app, proposes the fix with evidence, applies it through Lovable's plan and approval, and publishes once approved, with the rollback commit named. Use when the person says "fix my Lovable app", "our storage bill tripled", "something's broken on the site", "why is my app slow", "users can't sign in", "ship this fix", or pastes an error from a Lovable app. For bugs in code that lives in a local repository outside Lovable, a debugging skill fits better.
+description: "Finds the root cause of a problem in a Lovable app, proposes the fix with evidence, applies it through Lovable's plan and approval, and publishes once approved, with the rollback commit named. Use when the person says \"fix my Lovable app\", \"our storage bill tripled\", \"something's broken on the site\", \"why is my app slow\", \"users can't sign in\", \"ship this fix\", or pastes an error from a Lovable app. For bugs in code that lives in a local repository outside Lovable, a debugging skill fits better."
 ---
 
 # Fix and ship
@@ -17,7 +17,7 @@ description: Finds the root cause of a problem in a Lovable app, proposes the fi
   - A team app: only emails at the team's domain (the profile's `Sign-in domain`, or ask once) can sign up, and every table's policies check the signed-in email. Any check that the email is verified runs at sign-in.
   - A public app: anyone may sign up, and each person reads and changes only their own rows.
   After the build, confirm it in the database (`references/lovable.md`, Access checks). If something falls short, offer one fix message with its own yes. Tell the person who can sign up and who can read and change what, as found, never as requested, and never call an app safe to share. Describe a team app as "only people with an email at <domain> can sign up, and the database refuses everyone else", never as "only your team can sign in" or "sign-in limited to your domain". Ask for the domain as "which email domain may sign up".
-- Builds take minutes. Call `create_project` and `send_message` with `wait: false`, keep the project id and the top-level message id, and check `get_project` every 30 to 60 seconds. Once the agent has stopped, read `get_message` once for the result (which fields, in `references/lovable.md`), then:
+- Builds take minutes. Call `create_project` and `send_message` with `wait: false`, keep the project id, the top-level message id and the thread id when one is returned, and follow the build with `get_message` (`wait_seconds` up to 55, repeated) until `response.status` is `completed`, `awaiting_input`, `stopped` or `error`. Never wait on `get_project.agentFinished`: it stays false while a build waits for an approval. Read the result (which fields, in `references/lovable.md`), then:
   - Completed: pass any questions in the summary to the person word for word. Do not answer them yourself.
   - Waiting for approval: show the person what Lovable proposes, get their decision, and answer with `respond_to_approval`. A new message would replace the pending proposal. Approvals for keys and payments happen in the Lovable editor; give the `editor_url`.
   - Stopped or error: say so, and do not retry without a yes.
@@ -50,7 +50,7 @@ Resolve the project (`list_projects` by name, confirm). Pin down: what the perso
 
 ## Step 2 - Investigate
 
-- `list_edits` (oldest first; follow `pagination.next_cursor` to the pages around the start date) and find the edits around the start date. `get_diff` on the suspects. Quote the lines.
+- `list_edits` (the first page is the newest; follow `pagination.next_cursor` back to the pages around the start date) and find the edits around the start date. `get_diff` on the suspects. Quote the lines.
 - `read_file` on the files those diffs touched and on the page or function the symptom points at.
 - Cost or storage problems: `query_database` SELECT on `pg_total_relation_size` per table, row counts now versus the app's age, columns storing large text or base64, and edge functions that write on every request. Check storage buckets through the files that reference them.
 - Slowness: unbounded selects, queries in loops, missing indexes (`pg_indexes`), large payloads on first load.
@@ -62,7 +62,7 @@ What will change, why that removes the cause, what it could break, and how to un
 
 ## Step 4 - Plan, then apply (credits, one yes each)
 
-For a one-file change: one `send_message` (`wait: false`) describing the fix, after a yes that quotes its cost (about one credit), names the version to restore from Step 1, and says the result will be "fixed in the code, not tested" until the person tries it; poll and read its status per the Rules, then check the diff as below. For anything bigger: `send_message` with `plan_mode: true` and `wait: false`, describing the fix in plain language and asking which files it would touch, whether the database changes, and what could break. Poll `get_project` until `agentFinished`, then `get_message` once: plan mode ends with `response.status` = `awaiting_input` and a pending `plan--show` approval. That is the normal end of a plan, not a stall. Lovable committed the plan to `.lovable/plan/` (`01-overview.md`, `02-layout.html`, `03-details.md`); `read_file` them and show the person the files, the database change and the risks; a plan costs about one credit. On a yes, call `respond_to_approval` with the `project_id`, `awaiting_input.event_id`, the top-level `message_id` returned by the plan `send_message`, `decision: "approved"` and `wait: false`; that applies the plan. Never apply with a new `send_message`: it rejects the pending plan. On a no, `respond_to_approval` with `decision: "rejected"` and the person's reason in `user_input`. Poll, then `get_diff` with the same `message_id` and check the diff against the plan file by file. A small apply costs about one credit. Anything extra: say so before going on.
+For a one-file change: one `send_message` (`wait: false`) describing the fix, after a yes that quotes its cost (about one credit), names the version to restore from Step 1, and says the result will be "fixed in the code, not tested" until the person tries it; poll and read its status per the Rules, then check the diff as below. For anything bigger: `send_message` with `plan_mode: true` and `wait: false`, describing the fix in plain language and asking which files it would touch, whether the database changes, and what could break. Wait on `get_message` until it settles (see the Rules), then read it once: plan mode ends with `response.status` = `awaiting_input` and a pending `plan--show` approval. That is the normal end of a plan, not a stall. Lovable committed the plan to `.lovable/plan/` (`01-overview.md`, `02-layout.html`, `03-details.md`); `read_file` them and show the person the files, the database change and the risks; a plan costs about one credit. On a yes, call `respond_to_approval` with the `project_id`, `awaiting_input.event_id`, the top-level `message_id` returned by the plan `send_message`, `decision: "approved"` and `wait: false`; that applies the plan. Never apply with a new `send_message`: it rejects the pending plan. On a no, `respond_to_approval` with `decision: "rejected"` and the person's reason in `user_input`. Poll, then `get_diff` with the same `message_id` and check the diff against the plan file by file. A small apply costs about one credit. Anything extra: say so before going on.
 
 ## Step 5 - Verify
 
@@ -70,7 +70,7 @@ For a one-file change: one `send_message` (`wait: false`) describing the fix, af
 
 ## Step 6 - Ship (yes first)
 
-Ask for the yes with the publishing facts from the Rules (every unpublished edit goes live, now). Then `deploy_project`, poll `get_project.is_published`, read `publish_audience`. Return the live URL, who can open it, and the version to restore from the editor's history if needed.
+Ask for the yes with the publishing facts from the Rules (every unpublished edit goes live, now). Then `deploy_project`, confirm the new version is live (`references/lovable.md`, Visibility and publishing), read `publish_audience`. Return the live URL, who can open it, and the version to restore from the editor's history if needed.
 
 ## Output
 

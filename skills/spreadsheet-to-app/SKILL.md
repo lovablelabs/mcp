@@ -1,6 +1,6 @@
 ---
 name: spreadsheet-to-app
-description: Turns the spreadsheet that runs the business into a Lovable app: every tab read first, formulas kept as rules, rows imported into a real database and counted against the sheet. Use when the person says "this sheet runs the business", "turn this spreadsheet into an app", "make this Excel an app", "CSV to app", "replace this Google Sheet", or uploads a spreadsheet and asks for an app. To analyze or edit the spreadsheet itself, a spreadsheet skill fits better.
+description: "Turns the spreadsheet that runs the business into a Lovable app: every tab read first, formulas kept as rules, rows imported into a real database and counted against the sheet. Use when the person says \"this sheet runs the business\", \"turn this spreadsheet into an app\", \"make this Excel an app\", \"CSV to app\", \"replace this Google Sheet\", or uploads a spreadsheet and asks for an app. To analyze or edit the spreadsheet itself, a spreadsheet skill fits better."
 ---
 
 # Spreadsheet to app
@@ -17,7 +17,7 @@ description: Turns the spreadsheet that runs the business into a Lovable app: ev
   - A team app: only emails at the team's domain (the profile's `Sign-in domain`, or ask once) can sign up, and every table's policies check the signed-in email. Any check that the email is verified runs at sign-in.
   - A public app: anyone may sign up, and each person reads and changes only their own rows.
   After the build, confirm it in the database (`references/lovable.md`, Access checks). If something falls short, offer one fix message with its own yes. Tell the person who can sign up and who can read and change what, as found, never as requested, and never call an app safe to share. Describe a team app as "only people with an email at <domain> can sign up, and the database refuses everyone else", never as "only your team can sign in" or "sign-in limited to your domain". Ask for the domain as "which email domain may sign up".
-- Builds take minutes. Call `create_project` and `send_message` with `wait: false`, keep the project id and the top-level message id, and check `get_project` every 30 to 60 seconds. Once the agent has stopped, read `get_message` once for the result (which fields, in `references/lovable.md`), then:
+- Builds take minutes. Call `create_project` and `send_message` with `wait: false`, keep the project id, the top-level message id and the thread id when one is returned, and follow the build with `get_message` (`wait_seconds` up to 55, repeated) until `response.status` is `completed`, `awaiting_input`, `stopped` or `error`. Never wait on `get_project.agentFinished`: it stays false while a build waits for an approval. Read the result (which fields, in `references/lovable.md`), then:
   - Completed: pass any questions in the summary to the person word for word. Do not answer them yourself.
   - Waiting for approval: show the person what Lovable proposes, get their decision, and answer with `respond_to_approval`. A new message would replace the pending proposal. Approvals for keys and payments happen in the Lovable editor; give the `editor_url`.
   - Stopped or error: say so, and do not retry without a yes.
@@ -39,7 +39,7 @@ The sheet is read first, every tab, because the formulas are the business rules 
 | `get_me`, `get_workspace_knowledge` | workspace and business profile | yes |
 | `get_file_upload_url` | upload the file when this environment can PUT bytes | no (fallback below) |
 | `create_project` | the build with the file attached (credits) | yes |
-| `get_project`, `get_message` | poll progress, then read status, summary and credits once | yes |
+| `get_project`, `get_message` | follow the build, then read its status, summary and credits | yes |
 | `render_project_widget` | show build progress where the client supports it | no |
 | `get_database_status`, `query_database` (SELECT only) | verify row counts and columns after import | yes |
 | `send_message` | one fix round (credits) | no |
@@ -57,7 +57,7 @@ Two paths. Say which one is in use.
 
 ## Step 3 - Build (credits, yes first)
 
-`create_project` (`wait: false`) with `initial_message` = the data model, the rules, the screens, "import the attached file into the cloud database" (on the chat path, "create the tables and load these sample rows, marked as samples"), "keep the original column names as labels, add CSV import and export, sign-in", and, on the upload path only, "no sample data", plus the access requirement from the Rules for the people who will use it (a team gets the email allowlist); `files` with `file_id`, `file_name`, `mime_type` and `type: "file"` when uploaded. `render_project_widget`, poll `get_project` until `agentFinished`, `get_message` once. Status-like columns usually come back as text with a CHECK list, sometimes as an enum.
+`create_project` (`wait: false`) with `initial_message` = the data model, the rules, the screens, "import the attached file into the cloud database" (on the chat path, "create the tables and load these sample rows, marked as samples"), "keep the original column names as labels, add CSV import and export, sign-in", and, on the upload path only, "no sample data", plus the access requirement from the Rules for the people who will use it (a team gets the email allowlist); `files` with `file_id`, `file_name`, `mime_type` and `type: "file"` when uploaded. `render_project_widget`, wait on `get_message` until it settles (see the Rules), read it once. Status-like columns usually come back as text with a CHECK list, sometimes as an enum.
 
 ## Step 4 - Verify the import
 
@@ -65,7 +65,7 @@ Two paths. Say which one is in use.
 
 ## Step 5 - Publish (yes first)
 
-Ask for the yes with the publishing facts from the Rules, then `deploy_project`, poll `get_project.is_published`, read `publish_audience`, and say who can open it and who can sign up.
+Ask for the yes with the publishing facts from the Rules, then `deploy_project`, confirm the new version is live (`references/lovable.md`, Visibility and publishing), read `publish_audience`, and say who can open it and who can sign up.
 
 ## Output
 

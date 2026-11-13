@@ -1,6 +1,6 @@
 ---
 name: hiring-tracker
-description: Builds a hiring pipeline app on Lovable with stages, structured scorecards and a stage history, limited to the team's email domain because candidate data is personal. Use when the person says "we're hiring", "track candidates", "hiring pipeline", "applicant tracker", "ATS", "interview scorecard app", or wants to stop running hiring from a spreadsheet and a chat thread. For interview questions, offer letters or recruiting advice with no app to build, a recruiting or interview prep skill fits better.
+description: "Builds a hiring pipeline app on Lovable with stages, structured scorecards and a stage history, limited to the team's email domain because candidate data is personal. Use when the person says \"we're hiring\", \"track candidates\", \"hiring pipeline\", \"applicant tracker\", \"ATS\", \"interview scorecard app\", or wants to stop running hiring from a spreadsheet and a chat thread. For interview questions, offer letters or recruiting advice with no app to build, a recruiting or interview prep skill fits better."
 ---
 
 # Hiring tracker
@@ -17,7 +17,7 @@ description: Builds a hiring pipeline app on Lovable with stages, structured sco
   - A team app: only emails at the team's domain (the profile's `Sign-in domain`, or ask once) can sign up, and every table's policies check the signed-in email. Any check that the email is verified runs at sign-in.
   - A public app: anyone may sign up, and each person reads and changes only their own rows.
   After the build, confirm it in the database (`references/lovable.md`, Access checks). If something falls short, offer one fix message with its own yes. Tell the person who can sign up and who can read and change what, as found, never as requested, and never call an app safe to share. Describe a team app as "only people with an email at <domain> can sign up, and the database refuses everyone else", never as "only your team can sign in" or "sign-in limited to your domain". Ask for the domain as "which email domain may sign up".
-- Builds take minutes. Call `create_project` and `send_message` with `wait: false`, keep the project id and the top-level message id, and check `get_project` every 30 to 60 seconds. Once the agent has stopped, read `get_message` once for the result (which fields, in `references/lovable.md`), then:
+- Builds take minutes. Call `create_project` and `send_message` with `wait: false`, keep the project id, the top-level message id and the thread id when one is returned, and follow the build with `get_message` (`wait_seconds` up to 55, repeated) until `response.status` is `completed`, `awaiting_input`, `stopped` or `error`. Never wait on `get_project.agentFinished`: it stays false while a build waits for an approval. Read the result (which fields, in `references/lovable.md`), then:
   - Completed: pass any questions in the summary to the person word for word. Do not answer them yourself.
   - Waiting for approval: show the person what Lovable proposes, get their decision, and answer with `respond_to_approval`. A new message would replace the pending proposal. Approvals for keys and payments happen in the Lovable editor; give the `editor_url`.
   - Stopped or error: say so, and do not retry without a yes.
@@ -38,7 +38,7 @@ Candidate data is personal data. Sign-in alone would let anyone with an account 
 |---|---|---|
 | `get_me`, `get_workspace_knowledge` | workspace and business profile | yes |
 | `create_project` | build the tracker (credits) | yes |
-| `get_project`, `get_message` | poll progress, then read status, summary and credits once | yes |
+| `get_project`, `get_message` | follow the build, then read its status, summary and credits | yes |
 | `render_project_widget` | show build progress where the client supports it | no |
 | `query_database` | confirm the allowlist in `pg_policies`; schema, nullability and allowed values; candidate inserts after a yes | yes |
 | `list_files`, `read_file` | read the auth setup when the policies do not name the domain | no |
@@ -54,7 +54,7 @@ Write it in the conversation: each competency with a one-line definition, a 1 to
 
 ## Step 3 - Build (credits, yes first)
 
-`create_project` (`wait: false`) with `initial_message` describing: a hiring tracker with sign-in required on every page and the cloud database; only people with an email at the team's domain (from the profile, or ask once) can sign up, and the database refuses everyone else; `roles` (title, team, hiring manager, status); `candidates` (name, email, source, role, stage, owner, applied date, notes); `interviews` (candidate, interviewer, date, type, one score per competency, notes, recommendation); a kanban by stage per role; a candidate page showing all scorecards side by side with the average per competency; a stage-change log; export to CSV; no sample data. `render_project_widget`, poll `get_project` until `agentFinished`, then `get_message` once for the summary and credits. Expect four tables with RLS and an append-only `stage_changes` table fed by a trigger, and check what was built rather than assuming it. Confirm the allowlist is enforced in the database (`pg_policies` for the candidate tables) and find the sign-up check, both as the Rules describe. If either is only in the page, missing, or blocks sign-ups, say so and offer one `send_message`, with its own yes, to fix it. Interviewers only need to open the published app (Step 5), not edit the project, so leave `visibility` as it is unless the person asks.
+`create_project` (`wait: false`) with `initial_message` describing: a hiring tracker with sign-in required on every page and the cloud database; only people with an email at the team's domain (from the profile, or ask once) can sign up, and the database refuses everyone else; `roles` (title, team, hiring manager, status); `candidates` (name, email, source, role, stage, owner, applied date, notes); `interviews` (candidate, interviewer, date, type, one score per competency, notes, recommendation); a kanban by stage per role; a candidate page showing all scorecards side by side with the average per competency; a stage-change log; export to CSV; no sample data. `render_project_widget`, wait on `get_message` until it settles (see the Rules), then read it once for the summary and credits. Expect four tables with RLS and an append-only `stage_changes` table fed by a trigger, and check what was built rather than assuming it. Confirm the allowlist is enforced in the database (`pg_policies` for the candidate tables) and find the sign-up check, both as the Rules describe. If either is only in the page, missing, or blocks sign-ups, say so and offer one `send_message`, with its own yes, to fix it. Interviewers only need to open the published app (Step 5), not edit the project, so leave `visibility` as it is unless the person asks.
 
 ## Step 4 - Load a candidate list
 
@@ -62,7 +62,7 @@ Only when one exists in the conversation or an uploaded sheet. Read `column_name
 
 ## Step 5 - Publish (yes first)
 
-Before the yes, say the likely audience as the Rules describe. Candidate records are never public: if the likely audience is public, say that anyone with the link will reach the pages while the database keeps candidate rows to the allowed domain, and recommend setting the audience to the workspace in the editor's Publish menu first. Then ask for the yes with the publishing facts from the Rules. `deploy_project` returns `pending`; poll `get_project.is_published`, then read `publish_audience` and report it. Whether every page asks for sign-in comes from the route gate (`src/routes/_authenticated/` or the older stack's auth wrapper); say what `read_file` showed there, or "not checked". Say which it is, and who can sign up. Changing the audience is the editor's Publish menu, not this plugin; give the `editor_url`.
+Before the yes, say the likely audience as the Rules describe. Candidate records are never public: if the likely audience is public, say that anyone with the link will reach the pages while the database keeps candidate rows to the allowed domain, and recommend setting the audience to the workspace in the editor's Publish menu first. Then ask for the yes with the publishing facts from the Rules. Then `deploy_project`, confirm the new version is live (`references/lovable.md`, Visibility and publishing), then read `publish_audience` and report it. Whether every page asks for sign-in comes from the route gate (`src/routes/_authenticated/` or the older stack's auth wrapper); say what `read_file` showed there, or "not checked". Say which it is, and who can sign up. Changing the audience is the editor's Publish menu, not this plugin; give the `editor_url`.
 
 ## Output
 

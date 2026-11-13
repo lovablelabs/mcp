@@ -1,6 +1,6 @@
 ---
 name: first-customers
-description: Builds a CRM the person owns on Lovable and loads it with companies that match their best customer, found through the tools connected in Claude, each row with its source. Use when the person says "find companies like our best customer", "first customers", "build me a CRM", "a place to track outreach", "200 companies like X", or wants their own place to track early sales. Use it when the outcome is an app they keep using. For a one-off lead list in chat, contact enrichment, or loading leads into an existing CRM, a sales or prospecting skill fits better.
+description: "Builds a CRM the person owns on Lovable and loads it with companies that match their best customer, found through the tools connected in Claude, each row with its source. Use when the person says \"find companies like our best customer\", \"first customers\", \"build me a CRM\", \"a place to track outreach\", \"200 companies like X\", or wants their own place to track early sales. Use it when the outcome is an app they keep using. For a one-off lead list in chat, contact enrichment, or loading leads into an existing CRM, a sales or prospecting skill fits better."
 ---
 
 # First customers
@@ -17,7 +17,7 @@ description: Builds a CRM the person owns on Lovable and loads it with companies
   - A team app: only emails at the team's domain (the profile's `Sign-in domain`, or ask once) can sign up, and every table's policies check the signed-in email. Any check that the email is verified runs at sign-in.
   - A public app: anyone may sign up, and each person reads and changes only their own rows.
   After the build, confirm it in the database (`references/lovable.md`, Access checks). If something falls short, offer one fix message with its own yes. Tell the person who can sign up and who can read and change what, as found, never as requested, and never call an app safe to share. Describe a team app as "only people with an email at <domain> can sign up, and the database refuses everyone else", never as "only your team can sign in" or "sign-in limited to your domain". Ask for the domain as "which email domain may sign up".
-- Builds take minutes. Call `create_project` and `send_message` with `wait: false`, keep the project id and the top-level message id, and check `get_project` every 30 to 60 seconds. Once the agent has stopped, read `get_message` once for the result (which fields, in `references/lovable.md`), then:
+- Builds take minutes. Call `create_project` and `send_message` with `wait: false`, keep the project id, the top-level message id and the thread id when one is returned, and follow the build with `get_message` (`wait_seconds` up to 55, repeated) until `response.status` is `completed`, `awaiting_input`, `stopped` or `error`. Never wait on `get_project.agentFinished`: it stays false while a build waits for an approval. Read the result (which fields, in `references/lovable.md`), then:
   - Completed: pass any questions in the summary to the person word for word. Do not answer them yourself.
   - Waiting for approval: show the person what Lovable proposes, get their decision, and answer with `respond_to_approval`. A new message would replace the pending proposal. Approvals for keys and payments happen in the Lovable editor; give the `editor_url`.
   - Stopped or error: say so, and do not retry without a yes.
@@ -39,7 +39,7 @@ The person ends up with two things: a fit rule written in one sentence, and a CR
 | `get_me`, `get_workspace_knowledge` | workspace and business profile | yes |
 | Claude's connected tools (enrichment, CRM, web search) | candidate companies and the exclusion list | no (the CRM still gets built; the list is shorter) |
 | `create_project` | build the CRM (credits) | yes |
-| `get_project`, `get_message` | poll progress, then read status, summary and credits once | yes |
+| `get_project`, `get_message` | follow the build, then read its status, summary and credits | yes |
 | `render_project_widget` | show build progress where the client supports it | no |
 | `get_database_status`, `query_database` | read the real schema, then insert rows after a yes | yes |
 | `deploy_project` | publish | after a yes |
@@ -58,7 +58,7 @@ Build a table: company, domain, size, location, why it fits (which traits), sour
 
 ## Step 3 - Build the CRM (credits, yes first)
 
-If the person already has a CRM this skill built, skip this step and load the new batch into it. Otherwise `create_project` (`wait: false`) with `initial_message` describing: a CRM for a small team with sign-in and the cloud database; only people with an email at the team's domain (from the profile, or ask once) can sign up, and the database refuses everyone else; `companies` (name, domain, size, industry, location, fit_score, fit_reason, source, status with values new / contacted / replied / meeting / won / lost, owner, notes); `contacts` linked to a company (name, title, email, linkedin); `activities` linked to a company (date, type, note); a list view with filters, a kanban by status, a company page showing contacts and activities, CSV import and export, no sample data. Then `render_project_widget`. Poll `get_project` until `agentFinished`, `get_message` once and handle its status (see `references/lovable.md`). Confirm the allowlist in `pg_policies` (see `references/lovable.md`).
+If the person already has a CRM this skill built, skip this step and load the new batch into it. Otherwise `create_project` (`wait: false`) with `initial_message` describing: a CRM for a small team with sign-in and the cloud database; only people with an email at the team's domain (from the profile, or ask once) can sign up, and the database refuses everyone else; `companies` (name, domain, size, industry, location, fit_score, fit_reason, source, status with values new / contacted / replied / meeting / won / lost, owner, notes); `contacts` linked to a company (name, title, email, linkedin); `activities` linked to a company (date, type, note); a list view with filters, a kanban by status, a company page showing contacts and activities, CSV import and export, no sample data. Then `render_project_widget`. Wait on `get_message` until it settles (see the Rules), read it once and handle its status (see `references/lovable.md`). Confirm the allowlist in `pg_policies` (see `references/lovable.md`).
 
 ## Step 4 - Load the list
 
@@ -66,7 +66,7 @@ If the person already has a CRM this skill built, skip this step and load the ne
 
 ## Step 5 - Publish (yes first)
 
-Ask for the yes with the publishing facts from the Rules, then `deploy_project`, poll `get_project` until `is_published`, read `publish_audience`. Tell the person who can open the URL and who can sign up (the allowlist from Step 3). Never call it safe to share.
+Ask for the yes with the publishing facts from the Rules, then `deploy_project`, confirm the new version is live (`references/lovable.md`, Visibility and publishing), read `publish_audience`. Tell the person who can open the URL and who can sign up (the allowlist from Step 3). Never call it safe to share.
 
 ## Output
 
